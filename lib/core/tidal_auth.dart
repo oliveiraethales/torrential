@@ -17,17 +17,23 @@ enum AudioQuality {
   const AudioQuality(this.apiValue, this.label);
 }
 
-/// Tidal API client IDs extracted from the official apps.
-/// PKCE client is required for Hi-Res FLAC access.
+/// Tidal API credentials extracted from the official apps.
+/// Uses double-base64 encoding matching python-tidal's approach.
 class _TidalCredentials {
-  // PKCE client ID — required for HI_RES_LOSSLESS
-  // Python: base64.b64decode(base64.b64decode(a) + base64.b64decode(b)).decode()
-  static String get clientId {
-    final p1 = base64.decode('TmtKRVUxSmtjRXM=');
-    final p2 = base64.decode('NWFIRkZRbFJuVlE9PQ==');
-    final combined = utf8.decode([...p1, ...p2]);
-    return utf8.decode(base64.decode(combined));
+  static String _decodePair(String a, String b) {
+    final p1 = base64.decode(a);
+    final p2 = base64.decode(b);
+    return utf8.decode(base64.decode(utf8.decode([...p1, ...p2])));
   }
+
+  // OAuth client ID — used for device authorization flow
+  static String get clientId =>
+      _decodePair('WmxneVNuaGtiVzUw', 'V2xkTE1HbDRWQT09');
+
+  // OAuth client secret — required for token exchange in device flow
+  static String get clientSecret => _decodePair(
+      'TVU1uOU5mZWREQXFleHJnSktZa3RPVjB4bFFY',
+      'bExSMVpIYlVsT2RWaFFVRXhJVmxoQmRuaEJaejA5');
 }
 
 /// Result of initiating the device authorization flow.
@@ -113,6 +119,7 @@ class TidalAuth {
   TidalTokens? get tokens => _tokens;
   bool get isLoggedIn => _tokens != null && !_tokens!.isExpired;
   String get clientId => _TidalCredentials.clientId;
+  String get clientSecret => _TidalCredentials.clientSecret;
 
   TidalAuth({http.Client? httpClient})
       : _httpClient = httpClient ?? http.Client();
@@ -177,6 +184,7 @@ class TidalAuth {
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: {
         'client_id': clientId,
+        'client_secret': clientSecret,
         'device_code': authResult.deviceCode,
         'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
         'scope': 'r_usr w_usr w_sub',
