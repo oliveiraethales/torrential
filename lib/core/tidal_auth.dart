@@ -20,17 +20,22 @@ enum AudioQuality {
 /// Tidal API credentials extracted from the official apps.
 /// Uses double-base64 encoding matching python-tidal's approach.
 class _TidalCredentials {
-  static String _padB64(String s) {
-    final remainder = s.length % 4;
-    if (remainder != 0) s = s + '=' * (4 - remainder);
-    return s;
+  /// Base64 decode with automatic padding normalization.
+  /// Python's b64decode is lenient about padding; Dart's isn't.
+  static List<int> _b64(String input) {
+    input = input.replaceAll('=', '');
+    switch (input.length % 4) {
+      case 2: input += '=='; break;
+      case 3: input += '='; break;
+    }
+    return base64.decode(input);
   }
 
   static String _decodePair(String a, String b) {
-    final p1 = base64.decode(_padB64(a));
-    final p2 = base64.decode(_padB64(b));
+    final p1 = _b64(a);
+    final p2 = _b64(b);
     final combined = utf8.decode([...p1, ...p2]);
-    return utf8.decode(base64.decode(_padB64(combined)));
+    return utf8.decode(_b64(combined));
   }
 
   // OAuth client ID — used for device authorization flow
