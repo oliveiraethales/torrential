@@ -1,0 +1,25 @@
+name: torrential
+description: "A sleek Linux TIDAL client with Hi-Res FLAC support"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.4.0
+  url_launcher: ^6.3.0
+  shared_preferences: ^2.5.0
+  provider: ^6.1.0
+  cached_network_image: ^3.4.0
+  crypto: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
