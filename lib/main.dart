@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 import 'services/app_state.dart';
 import 'ui/theme/app_theme.dart';
@@ -7,6 +8,7 @@ import 'ui/screens/main_shell.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   runApp(const TorrentialApp());
 }
 

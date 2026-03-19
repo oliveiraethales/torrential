@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../core/tidal_auth.dart';
 import '../core/tidal_api.dart';
 import '../models/models.dart';
+import 'audio_player.dart';
 
 /// Navigation destinations in the app.
 enum NavDestination {
@@ -83,8 +84,40 @@ class AppState extends ChangeNotifier {
   // ─── Navigation history (for back navigation) ───────────────────
   final List<_NavState> _navHistory = [];
 
+  late final AudioPlayerService audioPlayer;
+
   AppState() : auth = TidalAuth() {
     api = TidalApi(auth: auth);
+    audioPlayer = AudioPlayerService(api: api);
+    _listenToPlayer();
+  }
+
+  void _listenToPlayer() {
+    audioPlayer.playingStream.listen((playing) {
+      _isPlaying = playing;
+      notifyListeners();
+    });
+    audioPlayer.positionStream.listen((pos) {
+      _position = pos;
+      notifyListeners();
+    });
+    audioPlayer.durationStream.listen((dur) {
+      _totalDuration = dur;
+      notifyListeners();
+    });
+    audioPlayer.trackStream.listen((track) {
+      _currentTrack = track;
+      notifyListeners();
+    });
+    audioPlayer.playbackInfoStream.listen((info) {
+      _currentPlaybackInfo = info;
+      notifyListeners();
+    });
+    audioPlayer.completedStream.listen((completed) {
+      if (completed) {
+        _queueIndex = audioPlayer.queueIndex;
+      }
+    });
   }
 
   /// Initialize the app — try to restore session.
@@ -289,49 +322,32 @@ class AppState extends ChangeNotifier {
   // ─── Playback ───────────────────────────────────────────────────
 
   Future<void> playTrack(Track track, {List<Track>? trackList, int? index}) async {
-    _currentTrack = track;
     if (trackList != null) {
       _queue = List.from(trackList);
       _queueIndex = index ?? 0;
     }
     notifyListeners();
-
-    try {
-      _currentPlaybackInfo = await api.getPlaybackInfo(track.id);
-      _totalDuration = Duration(seconds: track.duration);
-      _isPlaying = true;
-      notifyListeners();
-      // TODO: Actually start audio playback via media_kit
-    } catch (e) {
-      debugPrint('Failed to get playback info: $e');
-    }
+    await audioPlayer.playTrack(track, trackList: trackList, index: index);
   }
 
   void togglePlayPause() {
-    _isPlaying = !_isPlaying;
-    notifyListeners();
-    // TODO: Toggle actual playback
+    audioPlayer.togglePlayPause();
   }
 
   Future<void> playNext() async {
-    if (_queue.isEmpty) return;
-    if (_queueIndex < _queue.length - 1) {
-      _queueIndex++;
-      await playTrack(_queue[_queueIndex], trackList: _queue, index: _queueIndex);
-    }
+    await audioPlayer.playNext();
+    _queueIndex = audioPlayer.queueIndex;
+    notifyListeners();
   }
 
   Future<void> playPrevious() async {
-    if (_queue.isEmpty) return;
-    if (_queueIndex > 0) {
-      _queueIndex--;
-      await playTrack(_queue[_queueIndex], trackList: _queue, index: _queueIndex);
-    }
+    await audioPlayer.playPrevious();
+    _queueIndex = audioPlayer.queueIndex;
+    notifyListeners();
   }
 
-  void updatePosition(Duration position) {
-    _position = position;
-    notifyListeners();
+  Future<void> seekTo(Duration position) async {
+    await audioPlayer.seek(position);
   }
 }
 

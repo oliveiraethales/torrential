@@ -21,17 +21,30 @@ class NowPlayingBar extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Progress bar
+          // Seekable progress bar
           SizedBox(
             height: 3,
-            child: LinearProgressIndicator(
-              value: state.totalDuration.inSeconds > 0
-                  ? state.position.inSeconds / state.totalDuration.inSeconds
-                  : 0,
-              backgroundColor: Colors.white10,
-              valueColor: AlwaysStoppedAnimation(
-                  Theme.of(context).colorScheme.primary),
-              minHeight: 3,
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 3,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 0),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                activeTrackColor: Theme.of(context).colorScheme.primary,
+                inactiveTrackColor: Colors.white10,
+              ),
+              child: Slider(
+                value: state.totalDuration.inMilliseconds > 0
+                    ? (state.position.inMilliseconds /
+                            state.totalDuration.inMilliseconds)
+                        .clamp(0.0, 1.0)
+                    : 0.0,
+                onChanged: (value) {
+                  final pos = Duration(
+                      milliseconds:
+                          (value * state.totalDuration.inMilliseconds).round());
+                  state.seekTo(pos);
+                },
+              ),
             ),
           ),
           Expanded(
