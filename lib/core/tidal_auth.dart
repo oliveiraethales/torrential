@@ -20,10 +20,17 @@ enum AudioQuality {
 /// Tidal API credentials extracted from the official apps.
 /// Uses double-base64 encoding matching python-tidal's approach.
 class _TidalCredentials {
+  static String _padB64(String s) {
+    final remainder = s.length % 4;
+    if (remainder != 0) s = s + '=' * (4 - remainder);
+    return s;
+  }
+
   static String _decodePair(String a, String b) {
-    final p1 = base64.decode(a);
-    final p2 = base64.decode(b);
-    return utf8.decode(base64.decode(utf8.decode([...p1, ...p2])));
+    final p1 = base64.decode(_padB64(a));
+    final p2 = base64.decode(_padB64(b));
+    final combined = utf8.decode([...p1, ...p2]);
+    return utf8.decode(base64.decode(_padB64(combined)));
   }
 
   // OAuth client ID — used for device authorization flow
