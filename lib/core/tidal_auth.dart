@@ -21,10 +21,12 @@ enum AudioQuality {
 /// PKCE client is required for Hi-Res FLAC access.
 class _TidalCredentials {
   // PKCE client ID — required for HI_RES_LOSSLESS
+  // Python: base64.b64decode(base64.b64decode(a) + base64.b64decode(b)).decode()
   static String get clientId {
-    final p1 = utf8.decode(base64.decode(utf8.decode(base64.decode('TmtKRVUxSmtjRXM='))));
-    final p2 = utf8.decode(base64.decode(utf8.decode(base64.decode('NWFIRkZRbFJuVlE9PQ=='))));
-    return '$p1$p2';
+    final p1 = base64.decode('TmtKRVUxSmtjRXM=');
+    final p2 = base64.decode('NWFIRkZRbFJuVlE9PQ==');
+    final combined = utf8.decode([...p1, ...p2]);
+    return utf8.decode(base64.decode(combined));
   }
 }
 
