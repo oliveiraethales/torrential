@@ -230,6 +230,10 @@ class AppState extends ChangeNotifier {
       _selectedPlaylist = null;
       _selectedComposer = null;
       notifyListeners();
+
+      if (dest == NavDestination.composers) {
+        loadComposers();
+      }
     }
   }
 

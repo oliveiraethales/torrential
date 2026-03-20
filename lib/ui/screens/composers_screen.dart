@@ -4,22 +4,8 @@ import '../../models/models.dart';
 import '../../services/app_state.dart';
 import '../widgets/album_grid.dart';
 
-class ComposersCollectionScreen extends StatefulWidget {
+class ComposersCollectionScreen extends StatelessWidget {
   const ComposersCollectionScreen({super.key});
-
-  @override
-  State<ComposersCollectionScreen> createState() => _ComposersCollectionScreenState();
-}
-
-class _ComposersCollectionScreenState extends State<ComposersCollectionScreen> {
-  @override
-  void initState() {
-    super.initState();
-    final state = context.read<AppState>();
-    if (!state.composersLoaded && !state.composersLoading && state.favoriteAlbums.isNotEmpty) {
-      state.loadComposers();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
