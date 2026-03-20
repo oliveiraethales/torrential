@@ -11,6 +11,7 @@ enum NavDestination {
   search,
   albums,
   artists,
+  composers,
   playlists,
 }
 
@@ -50,10 +51,11 @@ class AppState extends ChangeNotifier {
   List<Track> _selectedPlaylistTracks = [];
   bool _contentLoading = false;
 
-  // ─── Composer filter state ─────────────────────────────────────
+  // ─── Composer state ─────────────────────────────────────────────
   Map<int, List<String>> _albumComposers = {};
   List<String> _allComposers = [];
   String? _selectedComposer;
+  List<Album> _selectedComposerAlbums = [];
   bool _composersLoading = false;
   bool _composersLoaded = false;
 
@@ -71,18 +73,11 @@ class AppState extends ChangeNotifier {
   List<Track> get selectedPlaylistTracks => _selectedPlaylistTracks;
   bool get contentLoading => _contentLoading;
 
-  Map<int, List<String>> get albumComposers => _albumComposers;
   List<String> get allComposers => _allComposers;
   String? get selectedComposer => _selectedComposer;
+  List<Album> get selectedComposerAlbums => _selectedComposerAlbums;
   bool get composersLoading => _composersLoading;
   bool get composersLoaded => _composersLoaded;
-
-  List<Album> get filteredFavoriteAlbums {
-    if (_selectedComposer == null) return _favoriteAlbums;
-    return _favoriteAlbums
-        .where((a) => _albumComposers[a.id]?.contains(_selectedComposer) ?? false)
-        .toList();
-  }
 
   // ─── Playback state ─────────────────────────────────────────────
   Track? _currentTrack;
@@ -211,6 +206,7 @@ class AppState extends ChangeNotifier {
     _albumComposers = {};
     _allComposers = [];
     _selectedComposer = null;
+    _selectedComposerAlbums = [];
     _composersLoaded = false;
     notifyListeners();
   }
@@ -224,16 +220,18 @@ class AppState extends ChangeNotifier {
         album: _selectedAlbum,
         artist: _selectedArtist,
         playlist: _selectedPlaylist,
+        composer: _selectedComposer,
       ));
       _currentNav = dest;
       _selectedAlbum = null;
       _selectedArtist = null;
       _selectedPlaylist = null;
+      _selectedComposer = null;
       notifyListeners();
     }
   }
 
-  bool get canGoBack => _navHistory.isNotEmpty || _selectedAlbum != null || _selectedArtist != null || _selectedPlaylist != null;
+  bool get canGoBack => _navHistory.isNotEmpty || _selectedAlbum != null || _selectedArtist != null || _selectedPlaylist != null || _selectedComposer != null;
 
   void goBack() {
     if (_selectedAlbum != null || _selectedArtist != null || _selectedPlaylist != null) {
@@ -243,12 +241,19 @@ class AppState extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    if (_selectedComposer != null) {
+      _selectedComposer = null;
+      _selectedComposerAlbums = [];
+      notifyListeners();
+      return;
+    }
     if (_navHistory.isNotEmpty) {
       final prev = _navHistory.removeLast();
       _currentNav = prev.nav;
       _selectedAlbum = prev.album;
       _selectedArtist = prev.artist;
       _selectedPlaylist = prev.playlist;
+      _selectedComposer = prev.composer;
       notifyListeners();
     }
   }
@@ -388,8 +393,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setComposerFilter(String? composer) {
+  void selectComposer(String composer) {
     _selectedComposer = composer;
+    _selectedComposerAlbums = _favoriteAlbums
+        .where((a) => _albumComposers[a.id]?.contains(composer) ?? false)
+        .toList();
     notifyListeners();
   }
 
@@ -430,6 +438,7 @@ class _NavState {
   final Album? album;
   final Artist? artist;
   final Playlist? playlist;
+  final String? composer;
 
-  _NavState({required this.nav, this.album, this.artist, this.playlist});
+  _NavState({required this.nav, this.album, this.artist, this.playlist, this.composer});
 }

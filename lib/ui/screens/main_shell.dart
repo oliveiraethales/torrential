@@ -5,6 +5,7 @@ import '../widgets/now_playing_bar.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
 import 'collection_screen.dart';
+import 'composers_screen.dart';
 import 'album_detail_screen.dart';
 import 'artist_detail_screen.dart';
 import 'playlist_detail_screen.dart';
@@ -78,6 +79,8 @@ class MainShell extends StatelessWidget {
         return const AlbumsCollectionScreen();
       case NavDestination.artists:
         return const ArtistsCollectionScreen();
+      case NavDestination.composers:
+        return const ComposersCollectionScreen();
       case NavDestination.playlists:
         return const PlaylistsCollectionScreen();
     }
@@ -155,6 +158,12 @@ class _Sidebar extends StatelessWidget {
             label: 'Artists',
             selected: state.currentNav == NavDestination.artists,
             onTap: () => state.navigateTo(NavDestination.artists),
+          ),
+          _NavItem(
+            icon: Icons.music_note_rounded,
+            label: 'Composers',
+            selected: state.currentNav == NavDestination.composers,
+            onTap: () => state.navigateTo(NavDestination.composers),
           ),
           _NavItem(
             icon: Icons.playlist_play_rounded,
