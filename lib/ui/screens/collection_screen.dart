@@ -3,20 +3,103 @@ import 'package:provider/provider.dart';
 import '../../services/app_state.dart';
 import '../widgets/album_grid.dart';
 
-class AlbumsCollectionScreen extends StatelessWidget {
+class AlbumsCollectionScreen extends StatefulWidget {
   const AlbumsCollectionScreen({super.key});
+
+  @override
+  State<AlbumsCollectionScreen> createState() => _AlbumsCollectionScreenState();
+}
+
+class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
+  @override
+  void initState() {
+    super.initState();
+    final state = context.read<AppState>();
+    if (!state.composersLoaded && !state.composersLoading && state.favoriteAlbums.isNotEmpty) {
+      state.loadComposers();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
+    final albums = state.filteredFavoriteAlbums;
+
     return _CollectionView(
       title: 'Albums',
       isEmpty: state.favoriteAlbums.isEmpty,
       emptyIcon: Icons.album_outlined,
       emptyMessage: 'No albums in your collection',
+      headerWidget: state.favoriteAlbums.isNotEmpty
+          ? _ComposerFilter(
+              composers: state.allComposers,
+              selected: state.selectedComposer,
+              loading: state.composersLoading,
+              onSelected: (composer) => state.setComposerFilter(composer),
+            )
+          : null,
       child: AlbumGrid(
-        albums: state.favoriteAlbums,
+        albums: albums,
         onTap: (album) => state.selectAlbum(album),
+      ),
+    );
+  }
+}
+
+class _ComposerFilter extends StatelessWidget {
+  final List<String> composers;
+  final String? selected;
+  final bool loading;
+  final ValueChanged<String?> onSelected;
+
+  const _ComposerFilter({
+    required this.composers,
+    required this.selected,
+    required this.loading,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Loading composers…',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (composers.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          FilterChip(
+            label: const Text('All'),
+            selected: selected == null,
+            onSelected: (_) => onSelected(null),
+          ),
+          ...composers.map((composer) => FilterChip(
+                label: Text(composer),
+                selected: selected == composer,
+                onSelected: (sel) => onSelected(sel ? composer : null),
+              )),
+        ],
       ),
     );
   }
@@ -153,6 +236,7 @@ class _CollectionView extends StatelessWidget {
   final IconData emptyIcon;
   final String emptyMessage;
   final Widget child;
+  final Widget? headerWidget;
 
   const _CollectionView({
     required this.title,
@@ -160,6 +244,7 @@ class _CollectionView extends StatelessWidget {
     required this.emptyIcon,
     required this.emptyMessage,
     required this.child,
+    this.headerWidget,
   });
 
   @override
@@ -169,6 +254,7 @@ class _CollectionView extends StatelessWidget {
       children: [
         Text(title, style: Theme.of(context).textTheme.headlineLarge),
         const SizedBox(height: 24),
+        if (headerWidget != null) headerWidget!,
         if (isEmpty)
           Center(
             child: Padding(

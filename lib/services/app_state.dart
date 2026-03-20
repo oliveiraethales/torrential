@@ -50,6 +50,13 @@ class AppState extends ChangeNotifier {
   List<Track> _selectedPlaylistTracks = [];
   bool _contentLoading = false;
 
+  // ─── Composer filter state ─────────────────────────────────────
+  Map<int, List<String>> _albumComposers = {};
+  List<String> _allComposers = [];
+  String? _selectedComposer;
+  bool _composersLoading = false;
+  bool _composersLoaded = false;
+
   SearchResults? get searchResults => _searchResults;
   List<Album> get favoriteAlbums => _favoriteAlbums;
   List<Artist> get favoriteArtists => _favoriteArtists;
@@ -63,6 +70,19 @@ class AppState extends ChangeNotifier {
   Playlist? get selectedPlaylist => _selectedPlaylist;
   List<Track> get selectedPlaylistTracks => _selectedPlaylistTracks;
   bool get contentLoading => _contentLoading;
+
+  Map<int, List<String>> get albumComposers => _albumComposers;
+  List<String> get allComposers => _allComposers;
+  String? get selectedComposer => _selectedComposer;
+  bool get composersLoading => _composersLoading;
+  bool get composersLoaded => _composersLoaded;
+
+  List<Album> get filteredFavoriteAlbums {
+    if (_selectedComposer == null) return _favoriteAlbums;
+    return _favoriteAlbums
+        .where((a) => _albumComposers[a.id]?.contains(_selectedComposer) ?? false)
+        .toList();
+  }
 
   // ─── Playback state ─────────────────────────────────────────────
   Track? _currentTrack;
@@ -188,6 +208,10 @@ class AppState extends ChangeNotifier {
     _currentTrack = null;
     _queue = [];
     _searchResults = null;
+    _albumComposers = {};
+    _allComposers = [];
+    _selectedComposer = null;
+    _composersLoaded = false;
     notifyListeners();
   }
 
@@ -316,6 +340,56 @@ class AppState extends ChangeNotifier {
     }
 
     _contentLoading = false;
+    notifyListeners();
+  }
+
+  // ─── Composer filter ─────────────────────────────────────────────
+
+  Future<void> loadComposers() async {
+    if (_composersLoaded || _composersLoading) return;
+    _composersLoading = true;
+    notifyListeners();
+
+    try {
+      final Map<int, List<String>> composerMap = {};
+      final Set<String> allComposerSet = {};
+
+      // Fetch credits for all favorite albums in parallel batches
+      const batchSize = 5;
+      for (var i = 0; i < _favoriteAlbums.length; i += batchSize) {
+        final batch = _favoriteAlbums.skip(i).take(batchSize);
+        final results = await Future.wait(
+          batch.map((album) async {
+            try {
+              return MapEntry(album.id, await api.getAlbumCredits(album.id));
+            } catch (e) {
+              debugPrint('Failed to load credits for album ${album.id}: $e');
+              return MapEntry(album.id, AlbumCredits(entries: []));
+            }
+          }),
+        );
+        for (final entry in results) {
+          final composers = entry.value.composers;
+          if (composers.isNotEmpty) {
+            composerMap[entry.key] = composers;
+            allComposerSet.addAll(composers);
+          }
+        }
+      }
+
+      _albumComposers = composerMap;
+      _allComposers = allComposerSet.toList()..sort();
+      _composersLoaded = true;
+    } catch (e) {
+      debugPrint('Failed to load composers: $e');
+    }
+
+    _composersLoading = false;
+    notifyListeners();
+  }
+
+  void setComposerFilter(String? composer) {
+    _selectedComposer = composer;
     notifyListeners();
   }
 
