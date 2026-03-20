@@ -359,14 +359,16 @@ class AppState extends ChangeNotifier {
       final Map<int, List<String>> composerMap = {};
       final Set<String> allComposerSet = {};
 
-      // Fetch credits for all favorite albums in parallel batches
-      const batchSize = 5;
+      const batchSize = 10;
       for (var i = 0; i < _favoriteAlbums.length; i += batchSize) {
         final batch = _favoriteAlbums.skip(i).take(batchSize);
         final results = await Future.wait(
           batch.map((album) async {
             try {
-              return MapEntry(album.id, await api.getAlbumCredits(album.id));
+              final credits = await api
+                  .getAlbumCredits(album.id)
+                  .timeout(const Duration(seconds: 10));
+              return MapEntry(album.id, credits);
             } catch (e) {
               debugPrint('Failed to load credits for album ${album.id}: $e');
               return MapEntry(album.id, AlbumCredits(entries: []));
@@ -380,10 +382,12 @@ class AppState extends ChangeNotifier {
             allComposerSet.addAll(composers);
           }
         }
+        // Update incrementally so the UI shows progress
+        _albumComposers = Map.of(composerMap);
+        _allComposers = allComposerSet.toList()..sort();
+        notifyListeners();
       }
 
-      _albumComposers = composerMap;
-      _allComposers = allComposerSet.toList()..sort();
       _composersLoaded = true;
     } catch (e) {
       debugPrint('Failed to load composers: $e');

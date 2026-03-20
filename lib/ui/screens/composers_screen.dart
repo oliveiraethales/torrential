@@ -59,14 +59,14 @@ class _ComposersListView extends StatelessWidget {
       children: [
         Text('Composers', style: Theme.of(context).textTheme.headlineLarge),
         const SizedBox(height: 24),
-        if (loading)
+        if (loading && composers.isEmpty)
           const Center(
             child: Padding(
               padding: EdgeInsets.only(top: 80),
               child: CircularProgressIndicator(),
             ),
           )
-        else if (composers.isEmpty)
+        else if (!loading && composers.isEmpty)
           Center(
             child: Padding(
               padding: const EdgeInsets.only(top: 80),
@@ -82,7 +82,25 @@ class _ComposersListView extends StatelessWidget {
               ),
             ),
           )
-        else
+        else ...[
+          if (loading)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Loading composers…',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -101,6 +119,7 @@ class _ComposersListView extends StatelessWidget {
               );
             },
           ),
+        ],
       ],
     );
   }
