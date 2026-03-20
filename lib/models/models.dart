@@ -346,9 +346,12 @@ class AlbumCredits {
   List<String> get composers {
     final result = <String>{};
     for (final entry in entries) {
-      if (entry.type.toLowerCase().contains('composer') ||
-          entry.type.toLowerCase().contains('writer') ||
-          entry.type.toLowerCase().contains('lyricist')) {
+      final type = entry.type.toLowerCase();
+      if (type.contains('composer') ||
+          type.contains('compuesto') ||
+          type.contains('arranger') ||
+          type.contains('writer') ||
+          type.contains('lyricist')) {
         for (final c in entry.contributors) {
           result.add(c.name);
         }
