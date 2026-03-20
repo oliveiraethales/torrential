@@ -90,7 +90,7 @@ sudo pacman -S clang ninja cmake gtk3 pkg-config mpv
 
 ## Roadmap / TODO
 
-- [ ] **Composer filter** — filter albums/tracks by composer in collection views (use `/albums/{id}/credits` endpoint, look for `Composer`/`Writer` credit types)
+- [x] **Composer filter** — filter albums by composer in Albums collection view (uses `/albums/{id}/credits` endpoint, `Composer`/`Writer`/`Lyricist` credit types)
 - [ ] **Volume control** — slider in now playing bar (`audioPlayer.setVolume()`)
 - [ ] **Shuffle & repeat** — toggle buttons in now playing bar
 - [ ] **Keyboard shortcuts** — Space=play/pause, Left/Right=seek, Ctrl+F=search
@@ -99,6 +99,14 @@ sudo pacman -S clang ninja cmake gtk3 pkg-config mpv
 - [ ] **Gapless playback polish** — pre-fetch next track manifest for seamless transition
 - [ ] **Offline caching** — cache album art and metadata locally
 - [ ] **Settings screen** — audio quality selector, audio output device, cache management
+
+## Workflow
+
+- **Small batches** — work incrementally, commit often after verifying each change builds.
+- **Review & test** — run `flutter analyze` and `flutter build linux` after each change.
+- **When in doubt, ask** — don't guess requirements; ask the user for clarification.
+- **Follow existing patterns** — read surrounding code before making changes.
+- **Update AGENTS.md** — keep the roadmap and docs in sync with completed work.
 
 ## Important Notes
 
