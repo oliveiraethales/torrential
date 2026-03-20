@@ -369,4 +369,12 @@ class AlbumCredits {
     }
     return AlbumCredits(entries: allEntries);
   }
+
+  factory AlbumCredits.fromJsonList(List<dynamic> json) {
+    final allEntries = <CreditEntry>[];
+    for (final item in json) {
+      allEntries.add(CreditEntry.fromJson(item as Map<String, dynamic>));
+    }
+    return AlbumCredits(entries: allEntries);
+  }
 }
