@@ -358,17 +358,13 @@ class AppState extends ChangeNotifier {
     _composersError = null;
     notifyListeners();
 
-    print('[Composers] Starting load for ${_favoriteAlbums.length} albums');
-
     try {
       final Map<int, List<String>> composerMap = {};
       final Set<String> allComposerSet = {};
-      int failures = 0;
 
       const batchSize = 10;
       for (var i = 0; i < _favoriteAlbums.length; i += batchSize) {
         final batch = _favoriteAlbums.skip(i).take(batchSize).toList();
-        print('[Composers] Batch ${i ~/ batchSize + 1}: albums ${batch.map((a) => a.id).join(', ')}');
         final results = await Future.wait(
           batch.map((album) async {
             try {
@@ -377,8 +373,6 @@ class AppState extends ChangeNotifier {
                   .timeout(const Duration(seconds: 10));
               return MapEntry(album.id, credits);
             } catch (e) {
-              failures++;
-              print('[Composers] FAILED album ${album.id} (${album.title}): $e');
               return MapEntry(album.id, AlbumCredits(entries: []));
             }
           }),
@@ -395,13 +389,9 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       }
 
-      print('[Composers] Done. Found ${allComposerSet.length} composers, $failures failures');
-      if (failures == _favoriteAlbums.length) {
-        _composersError = 'Failed to load credits from API';
-      }
       _composersLoaded = true;
     } catch (e) {
-      print('[Composers] Fatal error: $e');
+      debugPrint('Failed to load composers: $e');
       _composersError = e.toString();
     }
 
