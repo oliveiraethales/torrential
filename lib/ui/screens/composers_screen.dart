@@ -36,6 +36,7 @@ class _ComposersCollectionScreenState extends State<ComposersCollectionScreen> {
     return _ComposersListView(
       composers: state.allComposers,
       loading: state.composersLoading,
+      error: state.composersError,
       onTap: (composer) => state.selectComposer(composer),
     );
   }
@@ -44,11 +45,13 @@ class _ComposersCollectionScreenState extends State<ComposersCollectionScreen> {
 class _ComposersListView extends StatelessWidget {
   final List<String> composers;
   final bool loading;
+  final String? error;
   final ValueChanged<String> onTap;
 
   const _ComposersListView({
     required this.composers,
     required this.loading,
+    this.error,
     required this.onTap,
   });
 
@@ -72,10 +75,14 @@ class _ComposersListView extends StatelessWidget {
               padding: const EdgeInsets.only(top: 80),
               child: Column(
                 children: [
-                  const Icon(Icons.music_note_outlined, size: 64, color: Colors.white24),
+                  Icon(
+                    error != null ? Icons.error_outline : Icons.music_note_outlined,
+                    size: 64,
+                    color: error != null ? Colors.red.withValues(alpha: 0.5) : Colors.white24,
+                  ),
                   const SizedBox(height: 16),
                   Text(
-                    'No composers found',
+                    error ?? 'No composers found',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 ],

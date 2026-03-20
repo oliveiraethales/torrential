@@ -58,6 +58,7 @@ class AppState extends ChangeNotifier {
   List<Album> _selectedComposerAlbums = [];
   bool _composersLoading = false;
   bool _composersLoaded = false;
+  String? _composersError;
 
   SearchResults? get searchResults => _searchResults;
   List<Album> get favoriteAlbums => _favoriteAlbums;
@@ -78,6 +79,7 @@ class AppState extends ChangeNotifier {
   List<Album> get selectedComposerAlbums => _selectedComposerAlbums;
   bool get composersLoading => _composersLoading;
   bool get composersLoaded => _composersLoaded;
+  String? get composersError => _composersError;
 
   // ─── Playback state ─────────────────────────────────────────────
   Track? _currentTrack;
@@ -353,15 +355,20 @@ class AppState extends ChangeNotifier {
   Future<void> loadComposers() async {
     if (_composersLoaded || _composersLoading) return;
     _composersLoading = true;
+    _composersError = null;
     notifyListeners();
+
+    print('[Composers] Starting load for ${_favoriteAlbums.length} albums');
 
     try {
       final Map<int, List<String>> composerMap = {};
       final Set<String> allComposerSet = {};
+      int failures = 0;
 
       const batchSize = 10;
       for (var i = 0; i < _favoriteAlbums.length; i += batchSize) {
-        final batch = _favoriteAlbums.skip(i).take(batchSize);
+        final batch = _favoriteAlbums.skip(i).take(batchSize).toList();
+        print('[Composers] Batch ${i ~/ batchSize + 1}: albums ${batch.map((a) => a.id).join(', ')}');
         final results = await Future.wait(
           batch.map((album) async {
             try {
@@ -370,7 +377,8 @@ class AppState extends ChangeNotifier {
                   .timeout(const Duration(seconds: 10));
               return MapEntry(album.id, credits);
             } catch (e) {
-              debugPrint('Failed to load credits for album ${album.id}: $e');
+              failures++;
+              print('[Composers] FAILED album ${album.id} (${album.title}): $e');
               return MapEntry(album.id, AlbumCredits(entries: []));
             }
           }),
@@ -382,15 +390,19 @@ class AppState extends ChangeNotifier {
             allComposerSet.addAll(composers);
           }
         }
-        // Update incrementally so the UI shows progress
         _albumComposers = Map.of(composerMap);
         _allComposers = allComposerSet.toList()..sort();
         notifyListeners();
       }
 
+      print('[Composers] Done. Found ${allComposerSet.length} composers, $failures failures');
+      if (failures == _favoriteAlbums.length) {
+        _composersError = 'Failed to load credits from API';
+      }
       _composersLoaded = true;
     } catch (e) {
-      debugPrint('Failed to load composers: $e');
+      print('[Composers] Fatal error: $e');
+      _composersError = e.toString();
     }
 
     _composersLoading = false;
