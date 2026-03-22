@@ -1,10 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/models.dart';
 import '../../services/app_state.dart';
 import '../widgets/album_grid.dart';
 
-class AlbumsCollectionScreen extends StatelessWidget {
+enum AlbumSortMode { title, artist, year }
+
+class AlbumsCollectionScreen extends StatefulWidget {
   const AlbumsCollectionScreen({super.key});
+
+  @override
+  State<AlbumsCollectionScreen> createState() => _AlbumsCollectionScreenState();
+}
+
+class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
+  AlbumSortMode _sortMode = AlbumSortMode.title;
+
+  List<Album> _sortedAlbums(List<Album> albums) {
+    final sorted = List<Album>.from(albums);
+    switch (_sortMode) {
+      case AlbumSortMode.title:
+        sorted.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      case AlbumSortMode.artist:
+        sorted.sort((a, b) => a.artistNames.toLowerCase().compareTo(b.artistNames.toLowerCase()));
+      case AlbumSortMode.year:
+        sorted.sort((a, b) => (b.releaseDate ?? '').compareTo(a.releaseDate ?? ''));
+    }
+    return sorted;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,9 +37,74 @@ class AlbumsCollectionScreen extends StatelessWidget {
       isEmpty: state.favoriteAlbums.isEmpty,
       emptyIcon: Icons.album_outlined,
       emptyMessage: 'No albums in your collection',
+      trailing: state.favoriteAlbums.isNotEmpty
+          ? _SortDropdown(
+              value: _sortMode,
+              onChanged: (mode) => setState(() => _sortMode = mode),
+            )
+          : null,
       child: AlbumGrid(
-        albums: state.favoriteAlbums,
+        albums: _sortedAlbums(state.favoriteAlbums),
         onTap: (album) => state.selectAlbum(album),
+      ),
+    );
+  }
+}
+
+class _SortDropdown extends StatelessWidget {
+  final AlbumSortMode value;
+  final ValueChanged<AlbumSortMode> onChanged;
+
+  const _SortDropdown({required this.value, required this.onChanged});
+
+  String _label(AlbumSortMode mode) => switch (mode) {
+        AlbumSortMode.title => 'Title',
+        AlbumSortMode.artist => 'Artist',
+        AlbumSortMode.year => 'Year',
+      };
+
+  IconData _icon(AlbumSortMode mode) => switch (mode) {
+        AlbumSortMode.title => Icons.sort_by_alpha,
+        AlbumSortMode.artist => Icons.person_outline,
+        AlbumSortMode.year => Icons.calendar_today,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<AlbumSortMode>(
+      onSelected: onChanged,
+      tooltip: 'Sort albums',
+      offset: const Offset(0, 40),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      color: const Color(0xFF1E1E1E),
+      itemBuilder: (_) => AlbumSortMode.values.map((mode) {
+        return PopupMenuItem(
+          value: mode,
+          child: Row(
+            children: [
+              Icon(_icon(mode), size: 18, color: mode == value ? const Color(0xFF1DB954) : Colors.white70),
+              const SizedBox(width: 8),
+              Text(_label(mode), style: TextStyle(color: mode == value ? const Color(0xFF1DB954) : Colors.white)),
+            ],
+          ),
+        );
+      }).toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.sort, size: 18, color: Colors.white70),
+            const SizedBox(width: 6),
+            Text(_label(value), style: const TextStyle(fontSize: 13, color: Colors.white70)),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down, size: 18, color: Colors.white38),
+          ],
+        ),
       ),
     );
   }
@@ -153,6 +241,7 @@ class _CollectionView extends StatelessWidget {
   final IconData emptyIcon;
   final String emptyMessage;
   final Widget child;
+  final Widget? trailing;
 
   const _CollectionView({
     required this.title,
@@ -160,6 +249,7 @@ class _CollectionView extends StatelessWidget {
     required this.emptyIcon,
     required this.emptyMessage,
     required this.child,
+    this.trailing,
   });
 
   @override
@@ -167,7 +257,12 @@ class _CollectionView extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        Text(title, style: Theme.of(context).textTheme.headlineLarge),
+        Row(
+          children: [
+            Expanded(child: Text(title, style: Theme.of(context).textTheme.headlineLarge)),
+            if (trailing != null) trailing!,
+          ],
+        ),
         const SizedBox(height: 24),
         if (isEmpty)
           Center(
