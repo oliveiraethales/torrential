@@ -15,6 +15,7 @@ class AlbumsCollectionScreen extends StatefulWidget {
 
 class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
   AlbumSortMode _sortMode = AlbumSortMode.title;
+  bool _sortAscending = true;
 
   List<Album> _sortedAlbums(List<Album> albums) {
     final sorted = List<Album>.from(albums);
@@ -24,9 +25,20 @@ class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
       case AlbumSortMode.artist:
         sorted.sort((a, b) => a.artistNames.toLowerCase().compareTo(b.artistNames.toLowerCase()));
       case AlbumSortMode.year:
-        sorted.sort((a, b) => (b.releaseDate ?? '').compareTo(a.releaseDate ?? ''));
+        sorted.sort((a, b) => (a.releaseDate ?? '').compareTo(b.releaseDate ?? ''));
     }
-    return sorted;
+    return _sortAscending ? sorted : sorted.reversed.toList();
+  }
+
+  void _onSortSelected(AlbumSortMode mode) {
+    setState(() {
+      if (mode == _sortMode) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortMode = mode;
+        _sortAscending = true;
+      }
+    });
   }
 
   @override
@@ -40,7 +52,8 @@ class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
       trailing: state.favoriteAlbums.isNotEmpty
           ? _SortDropdown(
               value: _sortMode,
-              onChanged: (mode) => setState(() => _sortMode = mode),
+              ascending: _sortAscending,
+              onChanged: _onSortSelected,
             )
           : null,
       child: AlbumGrid(
@@ -53,9 +66,10 @@ class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
 
 class _SortDropdown extends StatelessWidget {
   final AlbumSortMode value;
+  final bool ascending;
   final ValueChanged<AlbumSortMode> onChanged;
 
-  const _SortDropdown({required this.value, required this.onChanged});
+  const _SortDropdown({required this.value, required this.ascending, required this.onChanged});
 
   String _label(AlbumSortMode mode) => switch (mode) {
         AlbumSortMode.title => 'Title',
@@ -78,13 +92,18 @@ class _SortDropdown extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       color: const Color(0xFF1E1E1E),
       itemBuilder: (_) => AlbumSortMode.values.map((mode) {
+        final isActive = mode == value;
         return PopupMenuItem(
           value: mode,
           child: Row(
             children: [
-              Icon(_icon(mode), size: 18, color: mode == value ? const Color(0xFF1DB954) : Colors.white70),
+              Icon(_icon(mode), size: 18, color: isActive ? const Color(0xFF1DB954) : Colors.white70),
               const SizedBox(width: 8),
-              Text(_label(mode), style: TextStyle(color: mode == value ? const Color(0xFF1DB954) : Colors.white)),
+              Expanded(
+                child: Text(_label(mode), style: TextStyle(color: isActive ? const Color(0xFF1DB954) : Colors.white)),
+              ),
+              if (isActive)
+                Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward, size: 14, color: const Color(0xFF1DB954)),
             ],
           ),
         );
@@ -102,7 +121,7 @@ class _SortDropdown extends StatelessWidget {
             const SizedBox(width: 6),
             Text(_label(value), style: const TextStyle(fontSize: 13, color: Colors.white70)),
             const SizedBox(width: 4),
-            const Icon(Icons.arrow_drop_down, size: 18, color: Colors.white38),
+            Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward, size: 14, color: Colors.white38),
           ],
         ),
       ),
