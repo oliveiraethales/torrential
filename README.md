@@ -1,6 +1,6 @@
 # 🌊 Torrential
 
-A sleek, native Linux client for TIDAL with Hi-Res FLAC streaming (24-bit/192kHz).
+A modern and sleek, native Linux client for TIDAL with Hi-Res FLAC streaming (24-bit/192kHz).
 
 Built with Flutter — not Electron. Native GPU-rendered UI, lossless audio via libmpv.
 
