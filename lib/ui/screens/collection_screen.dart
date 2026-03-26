@@ -4,22 +4,12 @@ import '../../models/models.dart';
 import '../../services/app_state.dart';
 import '../widgets/album_grid.dart';
 
-enum AlbumSortMode { title, artist, year }
-
-class AlbumsCollectionScreen extends StatefulWidget {
+class AlbumsCollectionScreen extends StatelessWidget {
   const AlbumsCollectionScreen({super.key});
 
-  @override
-  State<AlbumsCollectionScreen> createState() => _AlbumsCollectionScreenState();
-}
-
-class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
-  AlbumSortMode _sortMode = AlbumSortMode.title;
-  bool _sortAscending = true;
-
-  List<Album> _sortedAlbums(List<Album> albums) {
+  List<Album> _sortedAlbums(List<Album> albums, AlbumSortMode mode, bool ascending) {
     final sorted = List<Album>.from(albums);
-    switch (_sortMode) {
+    switch (mode) {
       case AlbumSortMode.title:
         sorted.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
       case AlbumSortMode.artist:
@@ -27,18 +17,7 @@ class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
       case AlbumSortMode.year:
         sorted.sort((a, b) => (a.releaseDate ?? '').compareTo(b.releaseDate ?? ''));
     }
-    return _sortAscending ? sorted : sorted.reversed.toList();
-  }
-
-  void _onSortSelected(AlbumSortMode mode) {
-    setState(() {
-      if (mode == _sortMode) {
-        _sortAscending = !_sortAscending;
-      } else {
-        _sortMode = mode;
-        _sortAscending = true;
-      }
-    });
+    return ascending ? sorted : sorted.reversed.toList();
   }
 
   @override
@@ -51,13 +30,13 @@ class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
       emptyMessage: 'No albums in your collection',
       trailing: state.favoriteAlbums.isNotEmpty
           ? _SortDropdown(
-              value: _sortMode,
-              ascending: _sortAscending,
-              onChanged: _onSortSelected,
+              value: state.albumSortMode,
+              ascending: state.albumSortAscending,
+              onChanged: (mode) => state.setAlbumSort(mode),
             )
           : null,
       child: AlbumGrid(
-        albums: _sortedAlbums(state.favoriteAlbums),
+        albums: _sortedAlbums(state.favoriteAlbums, state.albumSortMode, state.albumSortAscending),
         onTap: (album) => state.selectAlbum(album),
       ),
     );

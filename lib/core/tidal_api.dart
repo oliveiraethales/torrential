@@ -29,9 +29,8 @@ class TidalApi {
     ).replace(queryParameters: queryParams);
     final response = await _httpClient.get(uri, headers: auth.apiHeaders);
 
-    if (response.statusCode == 401) {
-      // Try refreshing and retry once
-      await auth.ensureValidToken();
+    if (response.statusCode == 401 || response.statusCode == 500) {
+      await auth.ensureValidToken(force: true);
       final retryResponse = await _httpClient.get(
         uri,
         headers: auth.apiHeaders,
@@ -68,8 +67,8 @@ class TidalApi {
     ).replace(queryParameters: queryParams);
     final response = await _httpClient.get(uri, headers: auth.apiHeaders);
 
-    if (response.statusCode == 401) {
-      await auth.ensureValidToken();
+    if (response.statusCode == 401 || response.statusCode == 500) {
+      await auth.ensureValidToken(force: true);
       final retryResponse = await _httpClient.get(
         uri,
         headers: auth.apiHeaders,

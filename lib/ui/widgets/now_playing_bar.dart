@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import '../../services/app_state.dart';
 
 class NowPlayingBar extends StatelessWidget {
-  const NowPlayingBar({super.key});
+  final VoidCallback? onArtTap;
+
+  const NowPlayingBar({super.key, this.onArtTap});
 
   @override
   Widget build(BuildContext context) {
@@ -54,17 +56,25 @@ class NowPlayingBar extends StatelessWidget {
                 children: [
                   // Track info
                   if (track.imageUrl.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.network(
-                        track.imageUrl,
-                        width: 48,
-                        height: 48,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          width: 48,
-                          height: 48,
-                          color: Colors.white10,
+                    MouseRegion(
+                      cursor: onArtTap != null
+                          ? SystemMouseCursors.click
+                          : SystemMouseCursors.basic,
+                      child: GestureDetector(
+                        onTap: onArtTap,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.network(
+                            track.imageUrl,
+                            width: 48,
+                            height: 48,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 48,
+                              height: 48,
+                              color: Colors.white10,
+                            ),
+                          ),
                         ),
                       ),
                     ),

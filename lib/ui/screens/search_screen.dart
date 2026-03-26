@@ -21,7 +21,12 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    _focusNode.requestFocus();
+    final query = context.read<AppState>().searchQuery;
+    if (query.isNotEmpty) {
+      _controller.text = query;
+    } else {
+      _focusNode.requestFocus();
+    }
   }
 
   @override

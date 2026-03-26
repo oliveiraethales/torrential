@@ -224,6 +224,7 @@ class TidalAuth {
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: {
         'client_id': clientId,
+        'client_secret': clientSecret,
         'grant_type': 'refresh_token',
         'refresh_token': _tokens!.refreshToken,
       },
@@ -273,9 +274,10 @@ class TidalAuth {
   }
 
   /// Ensure token is valid, refreshing if needed.
-  Future<void> ensureValidToken() async {
+  /// If [force] is true, refreshes even if not expired.
+  Future<void> ensureValidToken({bool force = false}) async {
     if (_tokens == null) throw Exception('Not logged in');
-    if (_tokens!.isExpired) {
+    if (force || _tokens!.isExpired) {
       final success = await _refreshToken();
       if (!success) throw Exception('Session expired. Please log in again.');
     }

@@ -4,6 +4,9 @@ import '../core/tidal_auth.dart';
 import '../core/tidal_api.dart';
 import '../models/models.dart';
 import 'audio_player.dart';
+import 'mpris_service.dart';
+
+enum AlbumSortMode { title, artist, year }
 
 /// Navigation destinations in the app.
 enum NavDestination {
@@ -35,6 +38,27 @@ class AppState extends ChangeNotifier {
   // ─── Navigation ─────────────────────────────────────────────────
   NavDestination _currentNav = NavDestination.home;
   NavDestination get currentNav => _currentNav;
+
+  // ─── Sort state ──────────────────────────────────────────────────
+  AlbumSortMode _albumSortMode = AlbumSortMode.title;
+  bool _albumSortAscending = true;
+
+  AlbumSortMode get albumSortMode => _albumSortMode;
+  bool get albumSortAscending => _albumSortAscending;
+
+  void setAlbumSort(AlbumSortMode mode) {
+    if (mode == _albumSortMode) {
+      _albumSortAscending = !_albumSortAscending;
+    } else {
+      _albumSortMode = mode;
+      _albumSortAscending = true;
+    }
+    notifyListeners();
+  }
+
+  // ─── Search state ──────────────────────────────────────────────
+  String _searchQuery = '';
+  String get searchQuery => _searchQuery;
 
   // ─── Content state ──────────────────────────────────────────────
   SearchResults? _searchResults;
@@ -102,11 +126,13 @@ class AppState extends ChangeNotifier {
   final List<_NavState> _navHistory = [];
 
   late final AudioPlayerService audioPlayer;
+  final MprisService _mpris = MprisService();
 
   AppState() : auth = TidalAuth() {
     api = TidalApi(auth: auth);
     audioPlayer = AudioPlayerService(api: api);
     _listenToPlayer();
+    _mpris.initialize(audioPlayer);
   }
 
   void _listenToPlayer() {
@@ -223,6 +249,10 @@ class AppState extends ChangeNotifier {
         artist: _selectedArtist,
         playlist: _selectedPlaylist,
         composer: _selectedComposer,
+        albumSortMode: _albumSortMode,
+        albumSortAscending: _albumSortAscending,
+        searchQuery: _searchQuery,
+        searchResults: _searchResults,
       ));
       _currentNav = dest;
       _selectedAlbum = null;
@@ -260,6 +290,10 @@ class AppState extends ChangeNotifier {
       _selectedArtist = prev.artist;
       _selectedPlaylist = prev.playlist;
       _selectedComposer = prev.composer;
+      _albumSortMode = prev.albumSortMode;
+      _albumSortAscending = prev.albumSortAscending;
+      _searchQuery = prev.searchQuery;
+      _searchResults = prev.searchResults;
       notifyListeners();
     }
   }
@@ -284,6 +318,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> search(String query) async {
+    _searchQuery = query;
     if (query.trim().isEmpty) {
       _searchResults = null;
       notifyListeners();
@@ -340,6 +375,8 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> selectPlaylist(Playlist playlist) async {
+    _selectedAlbum = null;
+    _selectedArtist = null;
     _selectedPlaylist = playlist;
     _contentLoading = true;
     notifyListeners();
@@ -449,6 +486,20 @@ class _NavState {
   final Artist? artist;
   final Playlist? playlist;
   final String? composer;
+  final AlbumSortMode albumSortMode;
+  final bool albumSortAscending;
+  final String searchQuery;
+  final SearchResults? searchResults;
 
-  _NavState({required this.nav, this.album, this.artist, this.playlist, this.composer});
+  _NavState({
+    required this.nav,
+    this.album,
+    this.artist,
+    this.playlist,
+    this.composer,
+    this.albumSortMode = AlbumSortMode.title,
+    this.albumSortAscending = true,
+    this.searchQuery = '',
+    this.searchResults,
+  });
 }
