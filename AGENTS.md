@@ -95,7 +95,7 @@ sudo pacman -S clang ninja cmake gtk3 pkg-config mpv
 - [ ] **Shuffle & repeat** — toggle buttons in now playing bar
 - [ ] **Keyboard shortcuts** — Space=play/pause, Left/Right=seek, Ctrl+F=search
 - [ ] **MPRIS integration** — system media key support (play/pause/next/prev from DE)
-- [ ] **App icon** — custom icon for desktop shortcut and window
+- [x] **App icon** — custom icon for desktop shortcut and window
 - [ ] **Gapless playback polish** — pre-fetch next track manifest for seamless transition
 - [ ] **Offline caching** — cache album art and metadata locally
 - [ ] **Settings screen** — audio quality selector, audio output device, cache management

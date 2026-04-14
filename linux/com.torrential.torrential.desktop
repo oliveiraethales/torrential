@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Torrential
+GenericName=Music Player
+Comment=A sleek Linux TIDAL client with Hi-Res FLAC support
+Exec=torrential
+Icon=com.torrential.torrential
+Terminal=false
+Categories=Audio;Music;Player;AudioVideo;
+Keywords=tidal;music;flac;hires;streaming;
+StartupWMClass=com.torrential.torrential
