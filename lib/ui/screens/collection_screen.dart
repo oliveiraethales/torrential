@@ -4,8 +4,15 @@ import '../../models/models.dart';
 import '../../services/app_state.dart';
 import '../widgets/album_grid.dart';
 
-class AlbumsCollectionScreen extends StatelessWidget {
+class AlbumsCollectionScreen extends StatefulWidget {
   const AlbumsCollectionScreen({super.key});
+
+  @override
+  State<AlbumsCollectionScreen> createState() => _AlbumsCollectionScreenState();
+}
+
+class _AlbumsCollectionScreenState extends State<AlbumsCollectionScreen> {
+  final _scrollController = ScrollController();
 
   List<Album> _sortedAlbums(List<Album> albums, AlbumSortMode mode, bool ascending) {
     final sorted = List<Album>.from(albums);
@@ -21,10 +28,36 @@ class AlbumsCollectionScreen extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.offset;
+    if (maxScroll - currentScroll <= 200) {
+      final state = context.read<AppState>();
+      if (state.hasMoreAlbums && !state.loadingMoreAlbums) {
+        state.loadMoreAlbums();
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     return _CollectionView(
       title: 'Albums',
+      scrollController: _scrollController,
       isEmpty: state.favoriteAlbums.isEmpty,
       emptyIcon: Icons.album_outlined,
       emptyMessage: 'No albums in your collection',
@@ -35,6 +68,7 @@ class AlbumsCollectionScreen extends StatelessWidget {
               onChanged: (mode) => state.setAlbumSort(mode),
             )
           : null,
+      loadingMore: state.loadingMoreAlbums,
       child: AlbumGrid(
         albums: _sortedAlbums(state.favoriteAlbums, state.albumSortMode, state.albumSortAscending),
         onTap: (album) => state.selectAlbum(album),
@@ -240,6 +274,8 @@ class _CollectionView extends StatelessWidget {
   final String emptyMessage;
   final Widget child;
   final Widget? trailing;
+  final ScrollController? scrollController;
+  final bool loadingMore;
 
   const _CollectionView({
     required this.title,
@@ -248,11 +284,14 @@ class _CollectionView extends StatelessWidget {
     required this.emptyMessage,
     required this.child,
     this.trailing,
+    this.scrollController,
+    this.loadingMore = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListView(
+      controller: scrollController,
       padding: const EdgeInsets.all(24),
       children: [
         Row(
@@ -280,6 +319,11 @@ class _CollectionView extends StatelessWidget {
           )
         else
           child,
+        if (loadingMore)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(child: CircularProgressIndicator()),
+          ),
       ],
     );
   }

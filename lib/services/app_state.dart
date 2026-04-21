@@ -75,6 +75,13 @@ class AppState extends ChangeNotifier {
   List<Track> _selectedPlaylistTracks = [];
   bool _contentLoading = false;
 
+  // ─── Album pagination state ────────────────────────────────────
+  int _favoriteAlbumsTotal = 0;
+  bool _loadingMoreAlbums = false;
+
+  bool get hasMoreAlbums => _favoriteAlbums.length < _favoriteAlbumsTotal;
+  bool get loadingMoreAlbums => _loadingMoreAlbums;
+
   // ─── Composer state ─────────────────────────────────────────────
   Map<int, List<String>> _albumComposers = {};
   List<String> _allComposers = [];
@@ -225,6 +232,7 @@ class AppState extends ChangeNotifier {
   Future<void> logout() async {
     await auth.logout();
     _favoriteAlbums = [];
+    _favoriteAlbumsTotal = 0;
     _favoriteArtists = [];
     _userPlaylists = [];
     _favoriteTracks = [];
@@ -308,13 +316,32 @@ class AppState extends ChangeNotifier {
         api.getUserPlaylists(),
         api.getFavoriteTracks(),
       ]);
-      _favoriteAlbums = results[0] as List<Album>;
+      final albumResult = results[0] as ({List<Album> items, int totalItems});
+      _favoriteAlbums = albumResult.items;
+      _favoriteAlbumsTotal = albumResult.totalItems;
       _favoriteArtists = results[1] as List<Artist>;
       _userPlaylists = results[2] as List<Playlist>;
       _favoriteTracks = results[3] as List<Track>;
     } catch (e) {
       debugPrint('Failed to load favorites: $e');
     }
+  }
+
+  Future<void> loadMoreAlbums() async {
+    if (_loadingMoreAlbums || !hasMoreAlbums) return;
+    _loadingMoreAlbums = true;
+    notifyListeners();
+
+    try {
+      final result = await api.getFavoriteAlbums(offset: _favoriteAlbums.length);
+      _favoriteAlbums = [..._favoriteAlbums, ...result.items];
+      _favoriteAlbumsTotal = result.totalItems;
+    } catch (e) {
+      debugPrint('Failed to load more albums: $e');
+    }
+
+    _loadingMoreAlbums = false;
+    notifyListeners();
   }
 
   Future<void> search(String query) async {

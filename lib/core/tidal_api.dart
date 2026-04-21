@@ -190,17 +190,21 @@ class TidalApi {
 
   // ─── User Collection (Favorites) ─────────────────────────────────
 
-  Future<List<Album>> getFavoriteAlbums({int limit = 100}) async {
+  Future<({List<Album> items, int totalItems})> getFavoriteAlbums({int limit = 100, int offset = 0}) async {
     final userId = auth.userId;
     if (userId == null) throw Exception('User not logged in');
     final data = await _get(
       '/users/$userId/favorites/albums',
-      params: {'limit': '$limit', 'order': 'DATE', 'orderDirection': 'DESC'},
+      params: {'limit': '$limit', 'offset': '$offset', 'order': 'DATE', 'orderDirection': 'DESC'},
     );
     final items = data['items'] as List<dynamic>;
-    return items
-        .map((e) => Album.fromJson(e['item'] as Map<String, dynamic>))
-        .toList();
+    final totalItems = data['totalNumberOfItems'] as int? ?? items.length;
+    return (
+      items: items
+          .map((e) => Album.fromJson(e['item'] as Map<String, dynamic>))
+          .toList(),
+      totalItems: totalItems,
+    );
   }
 
   Future<List<Artist>> getFavoriteArtists({int limit = 100}) async {
