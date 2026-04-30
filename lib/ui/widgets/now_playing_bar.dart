@@ -141,6 +141,38 @@ class NowPlayingBar extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        IconButton(
+                          tooltip: state.isTrackFavorited(track.id)
+                              ? 'Unlike'
+                              : 'Like',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                              minWidth: 32, minHeight: 32),
+                          iconSize: 20,
+                          icon: Icon(
+                            state.isTrackFavorited(track.id)
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            color: state.isTrackFavorited(track.id)
+                                ? const Color(0xFFFF4D6A)
+                                : Colors.white54,
+                          ),
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            try {
+                              await state.toggleFavoriteTrack(track);
+                            } catch (e) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: Colors.red.shade900,
+                                  content: Text('Failed: $e'),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 8),
                         if (state.currentPlaybackInfo != null)
                           Container(
                             padding: const EdgeInsets.symmetric(

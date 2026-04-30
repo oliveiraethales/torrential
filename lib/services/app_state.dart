@@ -66,6 +66,7 @@ class AppState extends ChangeNotifier {
   List<Artist> _favoriteArtists = [];
   List<Playlist> _userPlaylists = [];
   List<Track> _favoriteTracks = [];
+  Set<int> _favoriteTrackIds = {};
   Album? _selectedAlbum;
   List<Track> _selectedAlbumTracks = [];
   Artist? _selectedArtist;
@@ -96,6 +97,7 @@ class AppState extends ChangeNotifier {
   List<Artist> get favoriteArtists => _favoriteArtists;
   List<Playlist> get userPlaylists => _userPlaylists;
   List<Track> get favoriteTracks => _favoriteTracks;
+  bool isTrackFavorited(int trackId) => _favoriteTrackIds.contains(trackId);
   Album? get selectedAlbum => _selectedAlbum;
   List<Track> get selectedAlbumTracks => _selectedAlbumTracks;
   Artist? get selectedArtist => _selectedArtist;
@@ -236,6 +238,7 @@ class AppState extends ChangeNotifier {
     _favoriteArtists = [];
     _userPlaylists = [];
     _favoriteTracks = [];
+    _favoriteTrackIds = {};
     _currentTrack = null;
     _queue = [];
     _searchResults = null;
@@ -322,6 +325,7 @@ class AppState extends ChangeNotifier {
       _favoriteArtists = results[1] as List<Artist>;
       _userPlaylists = results[2] as List<Playlist>;
       _favoriteTracks = results[3] as List<Track>;
+      _favoriteTrackIds = _favoriteTracks.map((t) => t.id).toSet();
     } catch (e) {
       debugPrint('Failed to load favorites: $e');
     }
@@ -504,6 +508,74 @@ class AppState extends ChangeNotifier {
 
   Future<void> seekTo(Duration position) async {
     await audioPlayer.seek(position);
+  }
+
+  // ─── Favorites toggle ───────────────────────────────────────────
+
+  /// Optimistically toggle the favorited state of [track]. Reverts on failure.
+  Future<void> toggleFavoriteTrack(Track track) async {
+    final wasFavorited = _favoriteTrackIds.contains(track.id);
+    if (wasFavorited) {
+      _favoriteTrackIds.remove(track.id);
+      _favoriteTracks.removeWhere((t) => t.id == track.id);
+    } else {
+      _favoriteTrackIds.add(track.id);
+      _favoriteTracks = [track, ..._favoriteTracks];
+    }
+    notifyListeners();
+
+    try {
+      if (wasFavorited) {
+        await api.removeFavoriteTrack(track.id);
+      } else {
+        await api.addFavoriteTrack(track.id);
+      }
+    } catch (e) {
+      debugPrint('toggleFavoriteTrack failed: $e');
+      // Roll back optimistic update.
+      if (wasFavorited) {
+        _favoriteTrackIds.add(track.id);
+        _favoriteTracks = [track, ..._favoriteTracks];
+      } else {
+        _favoriteTrackIds.remove(track.id);
+        _favoriteTracks.removeWhere((t) => t.id == track.id);
+      }
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  // ─── Playlist mutation ──────────────────────────────────────────
+
+  /// Adds [track] to [playlist]. Returns the number of tracks actually added
+  /// (0 means the API accepted the request but didn't insert anything).
+  /// Throws on network/auth failure so the caller can surface an error.
+  Future<int> addTrackToPlaylist(Track track, Playlist playlist) async {
+    final added = await api.addTracksToPlaylist(playlist.uuid, [track.id]);
+    // Refresh the user's playlist list lazily so track counts stay in sync.
+    try {
+      _userPlaylists = await api.getUserPlaylists();
+    } catch (_) {}
+    notifyListeners();
+    return added;
+  }
+
+  /// Create a new user playlist and prepend it to the local list. Returns
+  /// the freshly created [Playlist] so callers can chain follow-up actions
+  /// (e.g. immediately add a track).
+  Future<Playlist> createPlaylist(String title, {String description = ''}) async {
+    final created = await api.createPlaylist(title, description: description);
+    _userPlaylists = [created, ..._userPlaylists];
+    notifyListeners();
+    // Refresh in the background so server-derived fields stay in sync.
+    () async {
+      try {
+        final fresh = await api.getUserPlaylists();
+        _userPlaylists = fresh;
+        notifyListeners();
+      } catch (_) {}
+    }();
+    return created;
   }
 }
 

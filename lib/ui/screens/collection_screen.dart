@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../services/app_state.dart';
 import '../widgets/album_grid.dart';
+import '../widgets/create_playlist_dialog.dart';
 
 class AlbumsCollectionScreen extends StatefulWidget {
   const AlbumsCollectionScreen({super.key});
@@ -200,6 +201,13 @@ class ArtistsCollectionScreen extends StatelessWidget {
 class PlaylistsCollectionScreen extends StatelessWidget {
   const PlaylistsCollectionScreen({super.key});
 
+  Future<void> _create(BuildContext context) async {
+    final created = await showCreatePlaylistDialog(context);
+    if (created != null && context.mounted) {
+      context.read<AppState>().selectPlaylist(created);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -208,6 +216,21 @@ class PlaylistsCollectionScreen extends StatelessWidget {
       isEmpty: state.userPlaylists.isEmpty,
       emptyIcon: Icons.playlist_play_outlined,
       emptyMessage: 'No playlists yet',
+      emptyAction: FilledButton.icon(
+        onPressed: () => _create(context),
+        icon: const Icon(Icons.add_rounded, size: 18),
+        label: const Text('Create playlist'),
+        style: FilledButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          padding:
+              const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+      trailing: _CreatePlaylistButton(onPressed: () => _create(context)),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -274,6 +297,7 @@ class _CollectionView extends StatelessWidget {
   final String emptyMessage;
   final Widget child;
   final Widget? trailing;
+  final Widget? emptyAction;
   final ScrollController? scrollController;
   final bool loadingMore;
 
@@ -284,6 +308,7 @@ class _CollectionView extends StatelessWidget {
     required this.emptyMessage,
     required this.child,
     this.trailing,
+    this.emptyAction,
     this.scrollController,
     this.loadingMore = false,
   });
@@ -313,6 +338,10 @@ class _CollectionView extends StatelessWidget {
                     emptyMessage,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
+                  if (emptyAction != null) ...[
+                    const SizedBox(height: 20),
+                    emptyAction!,
+                  ],
                 ],
               ),
             ),
@@ -325,6 +354,55 @@ class _CollectionView extends StatelessWidget {
             child: Center(child: CircularProgressIndicator()),
           ),
       ],
+    );
+  }
+}
+
+class _CreatePlaylistButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  const _CreatePlaylistButton({required this.onPressed});
+
+  @override
+  State<_CreatePlaylistButton> createState() => _CreatePlaylistButtonState();
+}
+
+class _CreatePlaylistButtonState extends State<_CreatePlaylistButton> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        decoration: BoxDecoration(
+          color: _hover
+              ? Colors.white.withValues(alpha: 0.10)
+              : const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: widget.onPressed,
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.add_rounded, size: 18, color: Colors.white70),
+                SizedBox(width: 6),
+                Text(
+                  'New playlist',
+                  style: TextStyle(fontSize: 13, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

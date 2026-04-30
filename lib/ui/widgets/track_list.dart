@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/models.dart';
+import '../../services/app_state.dart';
+import 'add_to_playlist_menu.dart';
 
 class TrackList extends StatelessWidget {
   final List<Track> tracks;
@@ -180,6 +183,52 @@ class _TrackRowState extends State<_TrackRow> {
                   ),
                 ),
 
+              // Add-to-playlist (visible on hover)
+              SizedBox(
+                width: 32,
+                child: _hovering
+                    ? Builder(
+                        builder: (btnContext) => IconButton(
+                          tooltip: 'Add to playlist',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                              minWidth: 28, minHeight: 28),
+                          iconSize: 18,
+                          color: Colors.white70,
+                          icon: const Icon(Icons.playlist_add_rounded),
+                          onPressed: () {
+                            final box = btnContext.findRenderObject()
+                                as RenderBox;
+                            final overlay = Overlay.of(btnContext)
+                                .context
+                                .findRenderObject() as RenderBox;
+                            final topLeft = box.localToGlobal(
+                                Offset.zero,
+                                ancestor: overlay);
+                            final bottomRight = box.localToGlobal(
+                                box.size.bottomRight(Offset.zero),
+                                ancestor: overlay);
+                            showAddToPlaylistMenu(
+                              context: btnContext,
+                              track: widget.track,
+                              position: RelativeRect.fromLTRB(
+                                topLeft.dx - 280,
+                                bottomRight.dy + 4,
+                                overlay.size.width - bottomRight.dx,
+                                0,
+                              ),
+                            );
+                          },
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 8),
+
+              // Favorite heart
+              _FavoriteHeart(track: widget.track, hovering: _hovering),
+              const SizedBox(width: 8),
+
               // Duration
               Text(
                 widget.track.durationFormatted,
@@ -188,6 +237,50 @@ class _TrackRowState extends State<_TrackRow> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _FavoriteHeart extends StatelessWidget {
+  final Track track;
+  final bool hovering;
+  const _FavoriteHeart({required this.track, required this.hovering});
+
+  static const _likedColor = Color(0xFFFF4D6A);
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final liked = state.isTrackFavorited(track.id);
+    if (!liked && !hovering) {
+      return const SizedBox(width: 22);
+    }
+    return SizedBox(
+      width: 22,
+      child: IconButton(
+        tooltip: liked ? 'Unlike' : 'Like',
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+        iconSize: 16,
+        icon: Icon(
+          liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+          color: liked ? _likedColor : Colors.white38,
+        ),
+        onPressed: () async {
+          final messenger = ScaffoldMessenger.of(context);
+          try {
+            await state.toggleFavoriteTrack(track);
+          } catch (e) {
+            messenger.showSnackBar(
+              SnackBar(
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Colors.red.shade900,
+                content: Text('Failed: $e'),
+              ),
+            );
+          }
+        },
       ),
     );
   }

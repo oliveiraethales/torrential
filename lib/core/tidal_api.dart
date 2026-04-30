@@ -294,9 +294,73 @@ class TidalApi {
     await _delete('/users/${auth.userId}/favorites/artists/$artistId');
   }
 
+  // ─── Playlist creation ───────────────────────────────────────────
+
+  /// Create a new user playlist with the given [title] and optional
+  /// [description]. Returns the freshly created [Playlist].
+  Future<Playlist> createPlaylist(String title, {String description = ''}) async {
+    await auth.ensureValidToken();
+    final userId = auth.userId;
+    final response = await _postRaw(
+      '/users/$userId/playlists',
+      body: {
+        'title': title,
+        'description': description,
+      },
+    );
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return Playlist.fromJson(data);
+  }
+
+  // ─── Playlist mutation ───────────────────────────────────────────
+
+  /// Fetch a playlist's ETag, required by Tidal for any mutation
+  /// (`If-None-Match` header on POST/DELETE).
+  Future<String> _getPlaylistEtag(String uuid) async {
+    await auth.ensureValidToken();
+    final uri = Uri.parse(
+      '$_baseUrl/playlists/$uuid',
+    ).replace(queryParameters: {'countryCode': auth.countryCode});
+    final response = await _httpClient.get(uri, headers: auth.apiHeaders);
+    if (response.statusCode != 200) {
+      throw Exception('Failed to fetch playlist ETag: ${response.statusCode}');
+    }
+    final etag = response.headers['etag'];
+    if (etag == null) {
+      throw Exception('Playlist response missing ETag header');
+    }
+    return etag;
+  }
+
+  /// Add one or more tracks to a user playlist.
+  /// Returns the number of tracks actually added (duplicates skipped if any).
+  Future<int> addTracksToPlaylist(String uuid, List<int> trackIds) async {
+    if (trackIds.isEmpty) return 0;
+    final etag = await _getPlaylistEtag(uuid);
+    final response = await _postRaw(
+      '/playlists/$uuid/items',
+      body: {
+        'trackIds': trackIds.join(','),
+        'onArtifactNotFound': 'FAIL',
+        'onDupes': 'ADD',
+      },
+      extraHeaders: {'If-None-Match': etag},
+    );
+    try {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final added = data['addedItemIds'] as List<dynamic>?;
+      if (added != null) return added.length;
+    } catch (_) {}
+    return trackIds.length;
+  }
+
   // ─── HTTP helpers ─────────────────────────────────────────────────
 
-  Future<void> _post(String path, {Map<String, String>? body}) async {
+  Future<http.Response> _postRaw(
+    String path, {
+    Map<String, String>? body,
+    Map<String, String>? extraHeaders,
+  }) async {
     await auth.ensureValidToken();
     final uri = Uri.parse(
       '$_baseUrl$path',
@@ -306,12 +370,18 @@ class TidalApi {
       headers: {
         ...auth.apiHeaders,
         'Content-Type': 'application/x-www-form-urlencoded',
+        ...?extraHeaders,
       },
       body: body,
     );
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception('POST failed: ${response.statusCode} ${response.body}');
     }
+    return response;
+  }
+
+  Future<void> _post(String path, {Map<String, String>? body}) async {
+    await _postRaw(path, body: body);
   }
 
   Future<void> _delete(String path) async {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_state.dart';
+import '../widgets/create_playlist_dialog.dart';
 import '../widgets/now_playing_bar.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
@@ -228,11 +229,30 @@ class _Sidebar extends StatelessWidget {
             onTap: () => state.navigateTo(NavDestination.playlists),
           ),
 
-          if (state.userPlaylists.isNotEmpty) ...[
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Divider(height: 1),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Divider(height: 1),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 8, 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'PLAYLISTS',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                ),
+                _AddPlaylistAction(
+                  onPressed: () => showCreatePlaylistDialog(context),
+                ),
+              ],
             ),
+          ),
+          if (state.userPlaylists.isNotEmpty)
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.zero,
@@ -247,8 +267,8 @@ class _Sidebar extends StatelessWidget {
                   );
                 },
               ),
-            ),
-          ] else
+            )
+          else
             const Spacer(),
 
           // Settings / Logout
@@ -376,6 +396,47 @@ class _PlaylistItemState extends State<_PlaylistItem> {
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddPlaylistAction extends StatefulWidget {
+  final VoidCallback onPressed;
+  const _AddPlaylistAction({required this.onPressed});
+
+  @override
+  State<_AddPlaylistAction> createState() => _AddPlaylistActionState();
+}
+
+class _AddPlaylistActionState extends State<_AddPlaylistAction> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: Tooltip(
+        message: 'Create playlist',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: widget.onPressed,
+          child: Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              color: _hover ? Colors.white.withValues(alpha: 0.10) : null,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              Icons.add_rounded,
+              size: 18,
+              color: _hover ? Colors.white : Colors.white54,
+            ),
           ),
         ),
       ),
