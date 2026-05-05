@@ -409,17 +409,38 @@ class AppState extends ChangeNotifier {
     _selectedAlbum = null;
     _selectedArtist = null;
     _selectedPlaylist = playlist;
+    _selectedPlaylistTracks = [];
     _contentLoading = true;
     notifyListeners();
 
+    final uuid = playlist.uuid;
     try {
-      _selectedPlaylistTracks = await api.getPlaylistTracks(playlist.uuid);
+      const pageSize = 100;
+      var offset = 0;
+      var totalItems = 0;
+      do {
+        final result =
+            await api.getPlaylistTracks(uuid, limit: pageSize, offset: offset);
+        // Bail out if the user navigated away to a different playlist
+        // while pages were still loading.
+        if (_selectedPlaylist?.uuid != uuid) return;
+        _selectedPlaylistTracks = [..._selectedPlaylistTracks, ...result.items];
+        totalItems = result.totalItems;
+        offset += result.items.length;
+        if (_contentLoading) {
+          _contentLoading = false;
+        }
+        notifyListeners();
+        if (result.items.isEmpty) break;
+      } while (offset < totalItems);
     } catch (e) {
       debugPrint('Failed to load playlist: $e');
     }
 
-    _contentLoading = false;
-    notifyListeners();
+    if (_selectedPlaylist?.uuid == uuid && _contentLoading) {
+      _contentLoading = false;
+      notifyListeners();
+    }
   }
 
   // ─── Composer filter ─────────────────────────────────────────────

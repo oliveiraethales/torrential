@@ -179,13 +179,21 @@ class TidalApi {
     return Playlist.fromJson(data);
   }
 
-  Future<List<Track>> getPlaylistTracks(String uuid, {int limit = 100}) async {
+  Future<({List<Track> items, int totalItems})> getPlaylistTracks(
+    String uuid, {
+    int limit = 100,
+    int offset = 0,
+  }) async {
     final data = await _get(
       '/playlists/$uuid/tracks',
-      params: {'limit': '$limit'},
+      params: {'limit': '$limit', 'offset': '$offset'},
     );
     final items = data['items'] as List<dynamic>;
-    return items.map((e) => Track.fromJson(e as Map<String, dynamic>)).toList();
+    final totalItems = data['totalNumberOfItems'] as int? ?? items.length;
+    return (
+      items: items.map((e) => Track.fromJson(e as Map<String, dynamic>)).toList(),
+      totalItems: totalItems,
+    );
   }
 
   // ─── User Collection (Favorites) ─────────────────────────────────
