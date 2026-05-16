@@ -91,6 +91,7 @@ sudo pacman -S clang ninja cmake gtk3 pkg-config mpv
 ## Roadmap / TODO
 
 - [x] **Composer filter** — filter albums by composer in Albums collection view (uses `/albums/{id}/credits` endpoint, `Composer`/`Writer`/`Lyricist` credit types)
+- [x] **Artist detail page** — hero header (blurred backdrop, portrait, Play button), bio (`/artists/{id}/bio`), Popular tracks, Albums, Singles & EPs (`filter=EPSANDSINGLES`), Appears On (`filter=COMPILATIONS`), Similar artists (`/artists/{id}/similar`). Artist names are clickable everywhere (track lists, album/playlist details, now-playing bar & screen) via the shared `ArtistLinks` widget.
 - [ ] **Volume control** — slider in now playing bar (`audioPlayer.setVolume()`)
 - [ ] **Shuffle & repeat** — toggle buttons in now playing bar
 - [ ] **Keyboard shortcuts** — Space=play/pause, Left/Right=seek, Ctrl+F=search

@@ -72,6 +72,10 @@ class AppState extends ChangeNotifier {
   Artist? _selectedArtist;
   List<Album> _selectedArtistAlbums = [];
   List<Track> _selectedArtistTopTracks = [];
+  List<Album> _selectedArtistEpsAndSingles = [];
+  List<Album> _selectedArtistCompilations = [];
+  List<Artist> _selectedArtistSimilar = [];
+  ArtistBio? _selectedArtistBio;
   Playlist? _selectedPlaylist;
   List<Track> _selectedPlaylistTracks = [];
   bool _contentLoading = false;
@@ -103,6 +107,10 @@ class AppState extends ChangeNotifier {
   Artist? get selectedArtist => _selectedArtist;
   List<Album> get selectedArtistAlbums => _selectedArtistAlbums;
   List<Track> get selectedArtistTopTracks => _selectedArtistTopTracks;
+  List<Album> get selectedArtistEpsAndSingles => _selectedArtistEpsAndSingles;
+  List<Album> get selectedArtistCompilations => _selectedArtistCompilations;
+  List<Artist> get selectedArtistSimilar => _selectedArtistSimilar;
+  ArtistBio? get selectedArtistBio => _selectedArtistBio;
   Playlist? get selectedPlaylist => _selectedPlaylist;
   List<Track> get selectedPlaylistTracks => _selectedPlaylistTracks;
   bool get contentLoading => _contentLoading;
@@ -386,17 +394,63 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> selectArtist(Artist artist) async {
+    // Push current view onto history if we're navigating between artists
+    // (or from anywhere with a selection) so back works as expected.
+    if (_selectedArtist != null && _selectedArtist!.id != artist.id) {
+      _navHistory.add(_NavState(
+        nav: _currentNav,
+        album: _selectedAlbum,
+        artist: _selectedArtist,
+        playlist: _selectedPlaylist,
+        composer: _selectedComposer,
+        albumSortMode: _albumSortMode,
+        albumSortAscending: _albumSortAscending,
+        searchQuery: _searchQuery,
+        searchResults: _searchResults,
+      ));
+    }
+
+    _selectedAlbum = null;
+    _selectedPlaylist = null;
     _selectedArtist = artist;
+    _selectedArtistAlbums = [];
+    _selectedArtistTopTracks = [];
+    _selectedArtistEpsAndSingles = [];
+    _selectedArtistCompilations = [];
+    _selectedArtistSimilar = [];
+    _selectedArtistBio = null;
     _contentLoading = true;
     notifyListeners();
 
+    final artistId = artist.id;
     try {
+      // Refresh basic artist info (favorites list often lacks picture).
+      try {
+        final fresh = await api.getArtist(artistId);
+        if (_selectedArtist?.id == artistId) {
+          _selectedArtist = fresh;
+          notifyListeners();
+        }
+      } catch (_) {}
+
       final results = await Future.wait([
-        api.getArtistAlbums(artist.id),
-        api.getArtistTopTracks(artist.id),
+        api.getArtistAlbums(artistId),
+        api.getArtistTopTracks(artistId),
+        api.getArtistEpsAndSingles(artistId),
+        api.getArtistCompilations(artistId),
+        api.getSimilarArtists(artistId),
+        api.getArtistBio(artistId),
       ]);
+
+      // Bail if user navigated to a different artist meanwhile.
+      if (_selectedArtist?.id != artistId) return;
+
       _selectedArtistAlbums = results[0] as List<Album>;
       _selectedArtistTopTracks = results[1] as List<Track>;
+      _selectedArtistEpsAndSingles = results[2] as List<Album>;
+      _selectedArtistCompilations = results[3] as List<Album>;
+      _selectedArtistSimilar = results[4] as List<Artist>;
+      _selectedArtistBio = results[5] as ArtistBio?;
     } catch (e) {
       debugPrint('Failed to load artist: $e');
     }

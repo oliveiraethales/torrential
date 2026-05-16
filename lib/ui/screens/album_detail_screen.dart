@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_state.dart';
+import '../widgets/artist_links.dart';
 import '../widgets/track_list.dart';
 
 class AlbumDetailScreen extends StatelessWidget {
@@ -44,18 +45,11 @@ class AlbumDetailScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.headlineLarge,
                   ),
                   const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      if (album.artists.isNotEmpty) {
-                        state.selectArtist(album.artists.first);
-                      }
-                    },
-                    child: Text(
-                      album.artistNames,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                    ),
+                  ArtistLinks(
+                    artists: album.artists,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                   ),
                   const SizedBox(height: 12),
                   Row(

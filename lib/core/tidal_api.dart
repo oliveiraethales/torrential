@@ -127,6 +127,64 @@ class TidalApi {
     return items.map((e) => Track.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  Future<ArtistBio?> getArtistBio(int artistId) async {
+    try {
+      final data = await _get('/artists/$artistId/bio');
+      return ArtistBio.fromJson(data);
+    } catch (_) {
+      // Many artists have no bio — treat as a soft failure.
+      return null;
+    }
+  }
+
+  Future<List<Artist>> getSimilarArtists(int artistId, {int limit = 20}) async {
+    try {
+      final data = await _get(
+        '/artists/$artistId/similar',
+        params: {'limit': '$limit'},
+      );
+      final items = data['items'] as List<dynamic>;
+      return items.map((e) => Artist.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Album>> getArtistEpsAndSingles(int artistId, {int limit = 50}) async {
+    try {
+      final data = await _get(
+        '/artists/$artistId/albums',
+        params: {'filter': 'EPSANDSINGLES', 'limit': '$limit'},
+      );
+      final items = data['items'] as List<dynamic>;
+      return items.map((e) => Album.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Album>> getArtistCompilations(int artistId, {int limit = 50}) async {
+    try {
+      final data = await _get(
+        '/artists/$artistId/albums',
+        params: {'filter': 'COMPILATIONS', 'limit': '$limit'},
+      );
+      final items = data['items'] as List<dynamic>;
+      return items.map((e) => Album.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Track>> getArtistRadio(int artistId, {int limit = 100}) async {
+    final data = await _get(
+      '/artists/$artistId/radio',
+      params: {'limit': '$limit'},
+    );
+    final items = data['items'] as List<dynamic>;
+    return items.map((e) => Track.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
   // ─── Albums ───────────────────────────────────────────────────────
 
   Future<Album> getAlbum(int id) async {

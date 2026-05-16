@@ -24,6 +24,7 @@ class Artist {
   });
 
   String get imageUrl => tidalImageUrl(picture);
+  String get heroImageUrl => tidalImageUrl(picture, width: 1080, height: 720);
 
   factory Artist.fromJson(Map<String, dynamic> json) {
     return Artist(
@@ -31,6 +32,30 @@ class Artist {
       name: json['name'] as String? ?? 'Unknown Artist',
       picture: json['picture'] as String?,
       popularity: json['popularity'] as int?,
+    );
+  }
+}
+
+class ArtistBio {
+  final String text;
+  final String? source;
+  final String? lastUpdated;
+
+  ArtistBio({required this.text, this.source, this.lastUpdated});
+
+  /// Strip Tidal's [wimpLink ...]label[/wimpLink] markup, leaving plain text.
+  String get plainText {
+    return text.replaceAllMapped(
+      RegExp(r'\[wimpLink[^\]]*\](.*?)\[/wimpLink\]', dotAll: true),
+      (m) => m.group(1) ?? '',
+    );
+  }
+
+  factory ArtistBio.fromJson(Map<String, dynamic> json) {
+    return ArtistBio(
+      text: json['text'] as String? ?? '',
+      source: json['source'] as String?,
+      lastUpdated: json['lastUpdated'] as String?,
     );
   }
 }

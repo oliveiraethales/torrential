@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../services/app_state.dart';
 import 'add_to_playlist_menu.dart';
+import 'artist_links.dart';
 
 class TrackList extends StatelessWidget {
   final List<Track> tracks;
@@ -145,13 +146,30 @@ class _TrackRowState extends State<_TrackRow> {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      widget.showAlbum && widget.track.album != null
-                          ? '${widget.track.artistNames} · ${widget.track.album!.title}'
-                          : widget.track.artistNames,
-                      style: Theme.of(context).textTheme.bodySmall,
+                    DefaultTextStyle.merge(
+                      style: Theme.of(context).textTheme.bodySmall ??
+                          const TextStyle(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: ArtistLinks(
+                              artists: widget.track.artists,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ),
+                          if (widget.showAlbum && widget.track.album != null) ...[
+                            Text(
+                              ' · ',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            Flexible(
+                              child: _AlbumLink(album: widget.track.album!),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -281,6 +299,39 @@ class _FavoriteHeart extends StatelessWidget {
             );
           }
         },
+      ),
+    );
+  }
+}
+
+class _AlbumLink extends StatefulWidget {
+  final Album album;
+  const _AlbumLink({required this.album});
+
+  @override
+  State<_AlbumLink> createState() => _AlbumLinkState();
+}
+
+class _AlbumLinkState extends State<_AlbumLink> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTap: () => context.read<AppState>().selectAlbum(widget.album),
+        child: Text(
+          widget.album.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                decoration:
+                    _hover ? TextDecoration.underline : TextDecoration.none,
+              ),
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_state.dart';
+import 'artist_links.dart';
 
 class NowPlayingBar extends StatelessWidget {
   final VoidCallback? onArtTap;
@@ -91,11 +92,10 @@ class NowPlayingBar extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        Text(
-                          track.artistNames,
+                        ArtistLinks(
+                          artists: track.artists,
                           style: Theme.of(context).textTheme.bodySmall,
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),

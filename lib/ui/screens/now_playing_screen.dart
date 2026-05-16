@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_state.dart';
+import '../widgets/artist_links.dart';
 
 class NowPlayingScreen extends StatelessWidget {
   final VoidCallback onClose;
@@ -95,27 +96,39 @@ class NowPlayingScreen extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        track.artistNames,
+                      ArtistLinks(
+                        artists: track.artists,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   color: Colors.white54,
                                 ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       if (track.album != null) ...[
                         const SizedBox(height: 4),
-                        Text(
-                          track.album!.title,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () {
+                              context
+                                  .read<AppState>()
+                                  .selectAlbum(track.album!);
+                              onClose();
+                            },
+                            child: Text(
+                              track.album!.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
                                     color: Colors.white30,
                                   ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ),
                       ],
                     ],
