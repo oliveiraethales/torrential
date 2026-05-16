@@ -1,27 +1,70 @@
 name: Publish to AUR
 
+# Only publishes when a version tag is pushed (e.g. `v0.2.0`) or when manually
+# dispatched. Pushes to `main` no longer trigger AUR releases.
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (without leading v, e.g. 0.2.0). Required for manual dispatch.'
+        required: true
+        type: string
 
 concurrency:
   group: aur-publish
   cancel-in-progress: false
 
+permissions: {}
+
 jobs:
-  publish:
-    name: Build, release, and push to AUR
+  # ---------------------------------------------------------------------------
+  # Build the Linux release tarball and publish a GitHub release.
+  # This job does NOT have access to the AUR SSH key.
+  # ---------------------------------------------------------------------------
+  build-and-release:
+    name: Build & publish GitHub release
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
+      release_name: ${{ steps.ver.outputs.release_name }}
+      sha256: ${{ steps.pkg.outputs.sha256 }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        # actions/checkout@v4.2.2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve version from tag or input
+        id: ver
+        env:
+          DISPATCH_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          elif [[ -n "${DISPATCH_VERSION:-}" ]]; then
+            VERSION="${DISPATCH_VERSION#v}"
+          else
+            echo "::error::Could not determine version: not a tag push and no version input provided." >&2
+            exit 1
+          fi
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([+.-][A-Za-z0-9.+-]+)?$ ]]; then
+            echo "::error::Version '$VERSION' does not look like a valid semver." >&2
+            exit 1
+          fi
+          echo "version=${VERSION}"      >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}"         >> "$GITHUB_OUTPUT"
+          echo "release_name=torrential-${VERSION}-linux-x86_64" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${VERSION}"
 
       - name: Install system dependencies
         run: |
@@ -32,22 +75,11 @@ jobs:
             libmpv-dev mpv
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+        # subosito/flutter-action@v2.23.0
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
           cache: true
-
-      - name: Compute version
-        id: ver
-        run: |
-          BASE=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
-          COUNT=$(git rev-list --count HEAD)
-          SHA=$(git rev-parse --short HEAD)
-          VERSION="${BASE}.r${COUNT}.g${SHA}"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "release_name=torrential-${VERSION}-linux-x86_64" >> "$GITHUB_OUTPUT"
-          echo "Resolved version: ${VERSION}"
 
       - name: Flutter pub get
         run: flutter pub get
@@ -78,11 +110,6 @@ jobs:
 
           cp linux/com.torrential.torrential.desktop "$RELEASE_DIR/"
 
-          # Reuse install/uninstall scripts produced by package-release.sh by
-          # extracting their inline content here keeps a single source of truth
-          # for the on-disk layout. We invoke the existing helper instead.
-          # (Note: package-release.sh would re-run flutter build; we already did that.)
-
           cat > "$RELEASE_DIR/install.sh" <<'INSTALL_EOF'
           #!/usr/bin/env bash
           set -euo pipefail
@@ -108,9 +135,9 @@ jobs:
           tar czf "${RELEASE_NAME}.tar.gz" "${RELEASE_NAME}"
           SHA256=$(sha256sum "${RELEASE_NAME}.tar.gz" | cut -d' ' -f1)
           echo "sha256=${SHA256}" >> "$GITHUB_OUTPUT"
-          echo "tarball=build/release/${RELEASE_NAME}.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "Tarball sha256: ${SHA256}"
 
-      - name: Create GitHub release
+      - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.ver.outputs.tag }}
@@ -129,11 +156,28 @@ jobs:
               --target "${GITHUB_SHA}"
           fi
 
+  # ---------------------------------------------------------------------------
+  # Push the new PKGBUILD to the AUR. Lives in the `aur` Environment so the
+  # SSH key is gated behind a manual approval (configure required reviewers
+  # at: Settings -> Environments -> aur).
+  # ---------------------------------------------------------------------------
+  publish-aur:
+    name: Push PKGBUILD to AUR
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    environment: aur
+    permissions: {}
+
+    steps:
       - name: Configure AUR SSH
         env:
           AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
         run: |
           set -euo pipefail
+          if [[ -z "${AUR_SSH_PRIVATE_KEY:-}" ]]; then
+            echo "::error::AUR_SSH_PRIVATE_KEY secret is not set in the 'aur' environment." >&2
+            exit 1
+          fi
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           printf '%s\n' "$AUR_SSH_PRIVATE_KEY" > ~/.ssh/aur
@@ -144,14 +188,13 @@ jobs:
             User aur
             IdentityFile ~/.ssh/aur
             IdentitiesOnly yes
-            StrictHostKeyChecking no
           EOF
           chmod 600 ~/.ssh/config
 
       - name: Push update to AUR
         env:
-          VERSION: ${{ steps.ver.outputs.version }}
-          SHA256: ${{ steps.pkg.outputs.sha256 }}
+          VERSION: ${{ needs.build-and-release.outputs.version }}
+          SHA256: ${{ needs.build-and-release.outputs.sha256 }}
           AUR_REPO: ssh://aur@aur.archlinux.org/torrential.git
         run: |
           set -euo pipefail
@@ -195,10 +238,11 @@ jobs:
           }
           EOF
 
-          # Generate .SRCINFO without requiring a full Arch toolchain.
-          # Use a containerized makepkg via docker (available on ubuntu-latest).
-          docker run --rm -v "$WORKDIR":/pkg -w /pkg archlinux:latest bash -c '
-            pacman -Sy --noconfirm --needed base-devel >/dev/null 2>&1
+          # Generate .SRCINFO using a pinned Arch image. The digest below is for
+          # archlinux:base-devel-20260510.0.525573 — bump intentionally as needed.
+          ARCH_IMAGE='archlinux@sha256:6ec1f5073a94d877ae97ebf68e507f709b395c7a90005fe92d9db1c21f933077'
+          docker run --rm -v "$WORKDIR":/pkg -w /pkg "$ARCH_IMAGE" bash -c '
+            pacman -Sy --noconfirm --needed base-devel >/dev/null 2>&1 || true
             useradd -m builder
             chown -R builder /pkg
             sudo -u builder makepkg --printsrcinfo > .SRCINFO

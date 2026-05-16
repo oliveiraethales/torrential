@@ -109,6 +109,40 @@ sudo pacman -S clang ninja cmake gtk3 pkg-config mpv
 - **Follow existing patterns** — read surrounding code before making changes.
 - **Update AGENTS.md** — keep the roadmap and docs in sync with completed work.
 
+## Publishing to AUR
+
+Two paths are supported. The **manual script** is the default — CI is opt-in and gated.
+
+### Manual (preferred for low cadence)
+
+1. Bump `version:` in `pubspec.yaml`.
+2. `./scripts/package-release.sh` — builds + writes tarball into `build/release/`.
+3. `gh release create vX.Y.Z build/release/torrential-X.Y.Z-linux-x86_64.tar.gz --title "Torrential X.Y.Z"`.
+4. `./scripts/update-aur.sh` — regenerates PKGBUILD/.SRCINFO and pushes to AUR using your local `~/.ssh/aur_*` key.
+
+### CI (`.github/workflows/aur-publish.yml`)
+
+Triggers **only** on `v*` tag pushes or manual `workflow_dispatch` (which requires a `version` input). Never runs on plain `main` pushes.
+
+Split into two jobs for least-privilege:
+
+- `build-and-release` — builds Flutter, packages tarball, creates the GitHub release. Has `contents: write`, no AUR secret access.
+- `publish-aur` — runs only after the first job, lives in the `aur` GitHub Environment (manual approval gate), and is the **only** job with access to `AUR_SSH_PRIVATE_KEY`.
+
+All third-party actions and the Arch Docker image are pinned by commit SHA / image digest. Bump them deliberately.
+
+**One-time setup required in GitHub UI:**
+
+1. Settings → Environments → New environment → name `aur`.
+2. Add required reviewer = yourself (so the job pauses for approval before the SSH key is exposed to the runner).
+3. Add environment secret `AUR_SSH_PRIVATE_KEY` — a **dedicated** ed25519 key used only for AUR pushes:
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/aur_ci -C "torrential-ci" -N ""
+   # Paste contents of ~/.ssh/aur_ci.pub at https://aur.archlinux.org/account
+   # Paste contents of ~/.ssh/aur_ci (the private key) into the secret value
+   ```
+4. If the dedicated key is ever leaked, just remove it from your AUR account — no other blast radius.
+
 ## Important Notes
 
 - This is an **unofficial** third-party client. Not affiliated with TIDAL.
