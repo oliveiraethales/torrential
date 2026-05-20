@@ -4,6 +4,7 @@ import '../core/tidal_auth.dart';
 import '../core/tidal_api.dart';
 import '../models/models.dart';
 import 'audio_player.dart';
+export 'audio_player.dart' show PlayerRepeatMode;
 import 'mpris_service.dart';
 
 enum AlbumSortMode { title, artist, year }
@@ -64,6 +65,7 @@ class AppState extends ChangeNotifier {
   SearchResults? _searchResults;
   List<Album> _favoriteAlbums = [];
   List<Artist> _favoriteArtists = [];
+  Set<int> _favoriteArtistIds = {};
   List<Playlist> _userPlaylists = [];
   List<Track> _favoriteTracks = [];
   Set<int> _favoriteTrackIds = {};
@@ -99,6 +101,7 @@ class AppState extends ChangeNotifier {
   SearchResults? get searchResults => _searchResults;
   List<Album> get favoriteAlbums => _favoriteAlbums;
   List<Artist> get favoriteArtists => _favoriteArtists;
+  bool isArtistFavorited(int artistId) => _favoriteArtistIds.contains(artistId);
   List<Playlist> get userPlaylists => _userPlaylists;
   List<Track> get favoriteTracks => _favoriteTracks;
   bool isTrackFavorited(int trackId) => _favoriteTrackIds.contains(trackId);
@@ -131,6 +134,9 @@ class AppState extends ChangeNotifier {
   Duration _position = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
+  bool _shuffle = false;
+  PlayerRepeatMode _repeat = PlayerRepeatMode.off;
+
   Track? get currentTrack => _currentTrack;
   PlaybackInfo? get currentPlaybackInfo => _currentPlaybackInfo;
   List<Track> get queue => _queue;
@@ -138,6 +144,8 @@ class AppState extends ChangeNotifier {
   bool get isPlaying => _isPlaying;
   Duration get position => _position;
   Duration get totalDuration => _totalDuration;
+  bool get shuffle => _shuffle;
+  PlayerRepeatMode get repeat => _repeat;
 
   // ─── Navigation history (for back navigation) ───────────────────
   final List<_NavState> _navHistory = [];
@@ -177,6 +185,21 @@ class AppState extends ChangeNotifier {
       if (completed) {
         _queueIndex = audioPlayer.queueIndex;
       }
+    });
+    audioPlayer.shuffleStream.listen((s) {
+      _shuffle = s;
+      _queue = audioPlayer.queue;
+      _queueIndex = audioPlayer.queueIndex;
+      notifyListeners();
+    });
+    audioPlayer.repeatStream.listen((r) {
+      _repeat = r;
+      notifyListeners();
+    });
+    audioPlayer.queueStream.listen((q) {
+      _queue = q;
+      _queueIndex = audioPlayer.queueIndex;
+      notifyListeners();
     });
   }
 
@@ -244,6 +267,7 @@ class AppState extends ChangeNotifier {
     _favoriteAlbums = [];
     _favoriteAlbumsTotal = 0;
     _favoriteArtists = [];
+    _favoriteArtistIds = {};
     _userPlaylists = [];
     _favoriteTracks = [];
     _favoriteTrackIds = {};
@@ -331,6 +355,7 @@ class AppState extends ChangeNotifier {
       _favoriteAlbums = albumResult.items;
       _favoriteAlbumsTotal = albumResult.totalItems;
       _favoriteArtists = results[1] as List<Artist>;
+      _favoriteArtistIds = _favoriteArtists.map((a) => a.id).toSet();
       _userPlaylists = results[2] as List<Playlist>;
       _favoriteTracks = results[3] as List<Track>;
       _favoriteTrackIds = _favoriteTracks.map((t) => t.id).toSet();
@@ -585,6 +610,17 @@ class AppState extends ChangeNotifier {
     await audioPlayer.seek(position);
   }
 
+  Future<void> playFromQueue(int index) async {
+    await audioPlayer.playFromQueue(index);
+    _queueIndex = audioPlayer.queueIndex;
+    notifyListeners();
+  }
+
+  void toggleShuffle() => audioPlayer.toggleShuffle();
+  void setShuffle(bool enabled) => audioPlayer.setShuffle(enabled);
+  void cycleRepeat() => audioPlayer.cycleRepeat();
+  void setRepeat(PlayerRepeatMode mode) => audioPlayer.setRepeat(mode);
+
   // ─── Favorites toggle ───────────────────────────────────────────
 
   /// Optimistically toggle the favorited state of [track]. Reverts on failure.
@@ -614,6 +650,38 @@ class AppState extends ChangeNotifier {
       } else {
         _favoriteTrackIds.remove(track.id);
         _favoriteTracks.removeWhere((t) => t.id == track.id);
+      }
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Optimistically toggle the favorited state of [artist]. Reverts on failure.
+  Future<void> toggleFavoriteArtist(Artist artist) async {
+    final wasFavorited = _favoriteArtistIds.contains(artist.id);
+    if (wasFavorited) {
+      _favoriteArtistIds.remove(artist.id);
+      _favoriteArtists.removeWhere((a) => a.id == artist.id);
+    } else {
+      _favoriteArtistIds.add(artist.id);
+      _favoriteArtists = [artist, ..._favoriteArtists];
+    }
+    notifyListeners();
+
+    try {
+      if (wasFavorited) {
+        await api.removeFavoriteArtist(artist.id);
+      } else {
+        await api.addFavoriteArtist(artist.id);
+      }
+    } catch (e) {
+      debugPrint('toggleFavoriteArtist failed: $e');
+      if (wasFavorited) {
+        _favoriteArtistIds.add(artist.id);
+        _favoriteArtists = [artist, ..._favoriteArtists];
+      } else {
+        _favoriteArtistIds.remove(artist.id);
+        _favoriteArtists.removeWhere((a) => a.id == artist.id);
       }
       notifyListeners();
       rethrow;

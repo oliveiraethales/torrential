@@ -108,6 +108,16 @@ class NowPlayingBar extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         IconButton(
+                          tooltip: state.shuffle ? 'Shuffle on' : 'Shuffle off',
+                          icon: const Icon(Icons.shuffle_rounded),
+                          onPressed: () => state.toggleShuffle(),
+                          iconSize: 18,
+                          color: state.shuffle
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.white54,
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
                           icon: const Icon(Icons.skip_previous_rounded),
                           onPressed: () => state.playPrevious(),
                           iconSize: 28,
@@ -130,6 +140,24 @@ class NowPlayingBar extends StatelessWidget {
                           onPressed: () => state.playNext(),
                           iconSize: 28,
                           color: Colors.white70,
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          tooltip: switch (state.repeat) {
+                            PlayerRepeatMode.off => 'Repeat off',
+                            PlayerRepeatMode.all => 'Repeat all',
+                            PlayerRepeatMode.one => 'Repeat one',
+                          },
+                          icon: Icon(
+                            state.repeat == PlayerRepeatMode.one
+                                ? Icons.repeat_one_rounded
+                                : Icons.repeat_rounded,
+                          ),
+                          onPressed: () => state.cycleRepeat(),
+                          iconSize: 18,
+                          color: state.repeat == PlayerRepeatMode.off
+                              ? Colors.white54
+                              : Theme.of(context).colorScheme.primary,
                         ),
                       ],
                     ),
@@ -205,6 +233,17 @@ class NowPlayingBar extends StatelessWidget {
                         Text(
                           _formatDuration(state.totalDuration),
                           style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: 'Show queue',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                              minWidth: 32, minHeight: 32),
+                          iconSize: 20,
+                          icon: const Icon(Icons.queue_music_rounded),
+                          color: Colors.white54,
+                          onPressed: onArtTap,
                         ),
                       ],
                     ),

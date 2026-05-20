@@ -8,6 +8,20 @@ String tidalImageUrl(String? imageId, {int width = 640, int height = 640}) {
   return 'https://resources.tidal.com/images/$path/${width}x$height.jpg';
 }
 
+/// Artist photos on Tidal's CDN are square at fixed sizes only:
+/// 160x160, 320x320, 480x480, 750x750. Requesting any other size 404s.
+String tidalArtistImageUrl(String? imageId, {int width = 750}) {
+  if (imageId == null || imageId.isEmpty) return '';
+  final size = switch (width) {
+    <= 160 => 160,
+    <= 320 => 320,
+    <= 480 => 480,
+    _ => 750,
+  };
+  final path = imageId.replaceAll('-', '/');
+  return 'https://resources.tidal.com/images/$path/${size}x$size.jpg';
+}
+
 // ─── Artist ─────────────────────────────────────────────────────────
 
 class Artist {
@@ -23,8 +37,8 @@ class Artist {
     this.popularity,
   });
 
-  String get imageUrl => tidalImageUrl(picture);
-  String get heroImageUrl => tidalImageUrl(picture, width: 1080, height: 720);
+  String get imageUrl => tidalArtistImageUrl(picture, width: 480);
+  String get heroImageUrl => tidalArtistImageUrl(picture, width: 1080);
 
   factory Artist.fromJson(Map<String, dynamic> json) {
     return Artist(

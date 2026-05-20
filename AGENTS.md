@@ -63,7 +63,7 @@ lib/
 ## Conventions
 
 - **Dark theme only** — pitch black background (`#0A0A0A`), card surfaces at `#1E1E1E`.
-- **No comments unless complex** — code should be self-documenting.
+- **No comments. Never.** — code should be self-documenting.
 - **Minimal dependencies** — don't add packages without checking if existing ones cover the need.
 - **Linux only** — no need to consider Android/iOS/web platform concerns.
 - **Error handling** — use `debugPrint` for dev errors, show user-facing errors via `SnackBar`.
@@ -93,7 +93,7 @@ sudo pacman -S clang ninja cmake gtk3 pkg-config mpv
 - [x] **Composer filter** — filter albums by composer in Albums collection view (uses `/albums/{id}/credits` endpoint, `Composer`/`Writer`/`Lyricist` credit types)
 - [x] **Artist detail page** — hero header (blurred backdrop, portrait, Play button), bio (`/artists/{id}/bio`), Popular tracks, Albums, Singles & EPs (`filter=EPSANDSINGLES`), Appears On (`filter=COMPILATIONS`), Similar artists (`/artists/{id}/similar`). Artist names are clickable everywhere (track lists, album/playlist details, now-playing bar & screen) via the shared `ArtistLinks` widget.
 - [ ] **Volume control** — slider in now playing bar (`audioPlayer.setVolume()`)
-- [ ] **Shuffle & repeat** — toggle buttons in now playing bar
+- [x] **Shuffle & repeat** — shuffle toggle preserves the original queue order and snaps the current track to index 0; repeat cycles off → all → one (one restarts the same track on completion, all wraps next/previous at the queue boundaries). Controls live in both the now-playing bar and full-screen player.
 - [ ] **Keyboard shortcuts** — Space=play/pause, Left/Right=seek, Ctrl+F=search
 - [ ] **MPRIS integration** — system media key support (play/pause/next/prev from DE)
 - [x] **App icon** — custom icon for desktop shortcut and window

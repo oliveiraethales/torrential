@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
@@ -106,132 +105,95 @@ class _ArtistHero extends StatelessWidget {
     final hasImage = artist.imageUrl.isNotEmpty;
 
     return SizedBox(
-      height: 320,
+      height: 360,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Backdrop image (blurred + dimmed)
+          // Crisp artist photo as backdrop.
           if (hasImage)
             Image.network(
               artist.heroImageUrl.isNotEmpty
                   ? artist.heroImageUrl
                   : artist.imageUrl,
               fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
               errorBuilder: (_, __, ___) =>
                   Container(color: const Color(0xFF1A1A1A)),
             )
           else
             Container(color: const Color(0xFF1A1A1A)),
 
-          if (hasImage)
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-              child: Container(color: Colors.black.withValues(alpha: 0.45)),
-            ),
-
-          // Vertical fade to page background
-          DecoratedBox(
-            decoration: const BoxDecoration(
+          // Bottom fade for text legibility + side fade for buttons row.
+          const DecoratedBox(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
+                  Color(0x80000000),
                   Color(0xFF0A0A0A),
                 ],
-                stops: [0.4, 1.0],
+                stops: [0.35, 0.75, 1.0],
               ),
             ),
           ),
 
-          // Foreground: portrait + name + actions
+          // Foreground: name + actions at bottom-left.
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            padding: const EdgeInsets.fromLTRB(32, 24, 32, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
+                Text(
+                  'ARTIST',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        letterSpacing: 1.4,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 90,
-                    backgroundColor: Colors.white10,
-                    backgroundImage:
-                        hasImage ? NetworkImage(artist.imageUrl) : null,
-                    child: hasImage
-                        ? null
-                        : const Icon(Icons.person, size: 72),
-                  ),
                 ),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        'ARTIST',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              letterSpacing: 1.4,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        artist.name,
-                        style: Theme.of(context)
-                            .textTheme
-                            .displaySmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.5),
-                                  blurRadius: 12,
-                                ),
-                              ],
-                            ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          FilledButton.icon(
-                            onPressed:
-                                state.selectedArtistTopTracks.isNotEmpty
-                                    ? () => state.playTrack(
-                                          state.selectedArtistTopTracks.first,
-                                          trackList:
-                                              state.selectedArtistTopTracks,
-                                          index: 0,
-                                        )
-                                    : null,
-                            icon: const Icon(Icons.play_arrow_rounded,
-                                size: 22),
-                            label: const Text('Play'),
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 22, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
+                const SizedBox(height: 6),
+                Text(
+                  artist.name,
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            blurRadius: 14,
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    FilledButton.icon(
+                      onPressed: state.selectedArtistTopTracks.isNotEmpty
+                          ? () => state.playTrack(
+                                state.selectedArtistTopTracks.first,
+                                trackList: state.selectedArtistTopTracks,
+                                index: 0,
+                              )
+                          : null,
+                      icon: const Icon(Icons.play_arrow_rounded, size: 22),
+                      label: const Text('Play'),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 22, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _FollowButton(artist: artist),
+                  ],
                 ),
               ],
             ),
@@ -393,6 +355,93 @@ class _SimilarArtistCardState extends State<_SimilarArtistCard> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FollowButton extends StatefulWidget {
+  final Artist artist;
+  const _FollowButton({required this.artist});
+
+  @override
+  State<_FollowButton> createState() => _FollowButtonState();
+}
+
+class _FollowButtonState extends State<_FollowButton> {
+  bool _hover = false;
+  bool _busy = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final following = state.isArtistFavorited(widget.artist.id);
+
+    final fg = following ? Colors.white : Colors.white.withValues(alpha: 0.85);
+    final bg = following
+        ? Colors.white.withValues(alpha: _hover ? 0.18 : 0.12)
+        : (_hover
+            ? Colors.white.withValues(alpha: 0.10)
+            : Colors.transparent);
+    final border = following
+        ? Colors.white.withValues(alpha: 0.30)
+        : Colors.white.withValues(alpha: 0.55);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTap: _busy
+            ? null
+            : () async {
+                setState(() => _busy = true);
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await context
+                      .read<AppState>()
+                      .toggleFavoriteArtist(widget.artist);
+                } catch (e) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: Colors.red.shade900,
+                      content: Text('Failed: $e'),
+                    ),
+                  );
+                } finally {
+                  if (mounted) setState(() => _busy = false);
+                }
+              },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border.all(color: border, width: 1.2),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                following ? Icons.check_rounded : Icons.add_rounded,
+                size: 18,
+                color: fg,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                following ? 'Following' : 'Follow',
+                style: TextStyle(
+                  color: fg,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
         ),
       ),
