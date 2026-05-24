@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../services/app_state.dart';
+import '../widgets/add_to_playlist_menu.dart';
 import '../widgets/artist_links.dart';
 
 class NowPlayingScreen extends StatefulWidget {
@@ -74,6 +75,17 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                 color: Colors.white70,
               ),
               const Spacer(),
+              Builder(
+                builder: (btnContext) => IconButton(
+                  tooltip: 'Add to playlist',
+                  icon: const Icon(Icons.playlist_add_rounded),
+                  onPressed: () => showAddToPlaylistMenuFor(
+                    anchorContext: btnContext,
+                    track: track,
+                  ),
+                  color: Colors.white70,
+                ),
+              ),
               IconButton(
                 tooltip: _showQueue ? 'Hide queue' : 'Show queue',
                 icon: const Icon(Icons.queue_music_rounded),
@@ -590,6 +602,27 @@ class _QueueRowState extends State<_QueueRow> {
                 ),
               ),
               const SizedBox(width: 8),
+              SizedBox(
+                width: 28,
+                child: _hovering
+                    ? Builder(
+                        builder: (btnContext) => IconButton(
+                          tooltip: 'Add to playlist',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                              minWidth: 24, minHeight: 24),
+                          iconSize: 16,
+                          color: Colors.white70,
+                          icon: const Icon(Icons.playlist_add_rounded),
+                          onPressed: () => showAddToPlaylistMenuFor(
+                            anchorContext: btnContext,
+                            track: widget.track,
+                          ),
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 4),
               Text(
                 widget.track.durationFormatted,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(

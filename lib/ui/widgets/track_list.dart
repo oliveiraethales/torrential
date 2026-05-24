@@ -214,29 +214,10 @@ class _TrackRowState extends State<_TrackRow> {
                           iconSize: 18,
                           color: Colors.white70,
                           icon: const Icon(Icons.playlist_add_rounded),
-                          onPressed: () {
-                            final box = btnContext.findRenderObject()
-                                as RenderBox;
-                            final overlay = Overlay.of(btnContext)
-                                .context
-                                .findRenderObject() as RenderBox;
-                            final topLeft = box.localToGlobal(
-                                Offset.zero,
-                                ancestor: overlay);
-                            final bottomRight = box.localToGlobal(
-                                box.size.bottomRight(Offset.zero),
-                                ancestor: overlay);
-                            showAddToPlaylistMenu(
-                              context: btnContext,
-                              track: widget.track,
-                              position: RelativeRect.fromLTRB(
-                                topLeft.dx - 280,
-                                bottomRight.dy + 4,
-                                overlay.size.width - bottomRight.dx,
-                                0,
-                              ),
-                            );
-                          },
+                          onPressed: () => showAddToPlaylistMenuFor(
+                            anchorContext: btnContext,
+                            track: widget.track,
+                          ),
                         ),
                       )
                     : null,

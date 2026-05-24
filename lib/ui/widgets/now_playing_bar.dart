@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_state.dart';
+import 'add_to_playlist_menu.dart';
 import 'artist_links.dart';
 
 class NowPlayingBar extends StatelessWidget {
@@ -169,6 +170,22 @@ class NowPlayingBar extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        Builder(
+                          builder: (btnContext) => IconButton(
+                            tooltip: 'Add to playlist',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 32, minHeight: 32),
+                            iconSize: 20,
+                            color: Colors.white54,
+                            icon: const Icon(Icons.playlist_add_rounded),
+                            onPressed: () => showAddToPlaylistMenuFor(
+                              anchorContext: btnContext,
+                              track: track,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
                         IconButton(
                           tooltip: state.isTrackFavorited(track.id)
                               ? 'Unlike'

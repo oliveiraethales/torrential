@@ -32,6 +32,39 @@ Future<void> showAddToPlaylistMenu({
   );
 }
 
+/// Anchors the add-to-playlist popover to the widget owning [anchorContext]
+/// (usually the trigger button's `Builder` context). Opens below the anchor
+/// when there's room, otherwise above; right-aligned to the anchor.
+Future<void> showAddToPlaylistMenuFor({
+  required BuildContext anchorContext,
+  required Track track,
+}) async {
+  final box = anchorContext.findRenderObject() as RenderBox;
+  final overlay =
+      Overlay.of(anchorContext).context.findRenderObject() as RenderBox;
+  final topLeft = box.localToGlobal(Offset.zero, ancestor: overlay);
+  final bottomRight =
+      box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay);
+
+  const menuWidth = 320.0;
+  const menuHeight = 380.0;
+  final spaceBelow = overlay.size.height - bottomRight.dy;
+  final openAbove = spaceBelow < menuHeight + 8 && topLeft.dy > menuHeight;
+
+  final position = RelativeRect.fromLTRB(
+    bottomRight.dx - menuWidth,
+    openAbove ? 0 : bottomRight.dy + 4,
+    overlay.size.width - bottomRight.dx,
+    openAbove ? overlay.size.height - topLeft.dy + 4 : 0,
+  );
+
+  await showAddToPlaylistMenu(
+    context: anchorContext,
+    track: track,
+    position: position,
+  );
+}
+
 class _AddToPlaylistContent extends StatefulWidget {
   final Track track;
   const _AddToPlaylistContent({required this.track});
