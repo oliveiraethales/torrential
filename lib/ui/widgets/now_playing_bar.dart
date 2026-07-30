@@ -39,13 +39,14 @@ class NowPlayingBar extends StatelessWidget {
               child: Slider(
                 value: state.totalDuration.inMilliseconds > 0
                     ? (state.position.inMilliseconds /
-                            state.totalDuration.inMilliseconds)
-                        .clamp(0.0, 1.0)
+                              state.totalDuration.inMilliseconds)
+                          .clamp(0.0, 1.0)
                     : 0.0,
                 onChanged: (value) {
                   final pos = Duration(
-                      milliseconds:
-                          (value * state.totalDuration.inMilliseconds).round());
+                    milliseconds: (value * state.totalDuration.inMilliseconds)
+                        .round(),
+                  );
                   state.seekTo(pos);
                 },
               ),
@@ -170,12 +171,23 @@ class NowPlayingBar extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        const SizedBox(width: 8),
+                        Slider(
+                          mouseCursor: SystemMouseCursors.grab,
+                          value: state.audioPlayer.volume,
+                          min: 0,
+                          max: 100,
+                          onChanged: (value) =>
+                              state.audioPlayer.setVolume(value),
+                        ),
                         Builder(
                           builder: (btnContext) => IconButton(
                             tooltip: 'Add to playlist',
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
-                                minWidth: 32, minHeight: 32),
+                              minWidth: 32,
+                              minHeight: 32,
+                            ),
                             iconSize: 20,
                             color: Colors.white54,
                             icon: const Icon(Icons.playlist_add_rounded),
@@ -192,7 +204,9 @@ class NowPlayingBar extends StatelessWidget {
                               : 'Like',
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(
-                              minWidth: 32, minHeight: 32),
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           iconSize: 20,
                           icon: Icon(
                             state.isTrackFavorited(track.id)
@@ -228,36 +242,50 @@ class NowPlayingBar extends StatelessWidget {
                               onTap: () => state.toggleDolbyAtmos(),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
-                                  gradient: state.currentPlaybackInfo!.isDolbyAtmos
+                                  gradient:
+                                      state.currentPlaybackInfo!.isDolbyAtmos
                                       ? const LinearGradient(
-                                          colors: [Color(0xFF8A2BE2), Color(0xFF00B4D8)],
+                                          colors: [
+                                            Color(0xFF8A2BE2),
+                                            Color(0xFF00B4D8),
+                                          ],
                                         )
                                       : null,
                                   color: state.currentPlaybackInfo!.isDolbyAtmos
                                       ? null
-                                      : Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withValues(alpha: 0.15),
+                                      : Theme.of(context).colorScheme.primary
+                                            .withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (state.currentPlaybackInfo!.isDolbyAtmos) ...[
-                                      const Icon(Icons.spatial_audio_rounded,
-                                          size: 12, color: Colors.white),
+                                    if (state
+                                        .currentPlaybackInfo!
+                                        .isDolbyAtmos) ...[
+                                      const Icon(
+                                        Icons.spatial_audio_rounded,
+                                        size: 12,
+                                        color: Colors.white,
+                                      ),
                                       const SizedBox(width: 4),
                                     ],
                                     Text(
                                       state.currentPlaybackInfo!.qualityLabel,
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: state.currentPlaybackInfo!.isDolbyAtmos
+                                        color:
+                                            state
+                                                .currentPlaybackInfo!
+                                                .isDolbyAtmos
                                             ? Colors.white
-                                            : Theme.of(context).colorScheme.primary,
+                                            : Theme.of(
+                                                context,
+                                              ).colorScheme.primary,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -284,7 +312,9 @@ class NowPlayingBar extends StatelessWidget {
                           tooltip: 'Show queue',
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(
-                              minWidth: 32, minHeight: 32),
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
                           iconSize: 20,
                           icon: const Icon(Icons.queue_music_rounded),
                           color: Colors.white54,

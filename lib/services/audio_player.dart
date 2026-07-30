@@ -34,7 +34,8 @@ class AudioPlayerService {
   final _dolbyAtmosController = StreamController<bool>.broadcast();
 
   Stream<Track?> get trackStream => _trackController.stream;
-  Stream<PlaybackInfo?> get playbackInfoStream => _playbackInfoController.stream;
+  Stream<PlaybackInfo?> get playbackInfoStream =>
+      _playbackInfoController.stream;
   Stream<List<Track>> get queueStream => _queueController.stream;
   Stream<bool> get shuffleStream => _shuffleController.stream;
   Stream<PlayerRepeatMode> get repeatStream => _repeatController.stream;
@@ -48,6 +49,7 @@ class AudioPlayerService {
 
   // Direct state access
   bool get isPlaying => _player.state.playing;
+  double get volume => _player.state.volume;
   Duration get position => _player.state.position;
   Duration get duration => _player.state.duration;
   Track? get currentTrack => _currentTrack;
@@ -69,8 +71,7 @@ class AudioPlayerService {
 
   void toggleDolbyAtmos() => setEnableDolbyAtmos(!_enableDolbyAtmos);
 
-  AudioPlayerService({required this.api})
-      : _player = Player() {
+  AudioPlayerService({required this.api}) : _player = Player() {
     _player.stream.completed.listen((completed) {
       if (!completed) return;
       _onTrackCompleted();
@@ -92,8 +93,11 @@ class AudioPlayerService {
   }
 
   /// Play a track, optionally setting the queue.
-  Future<void> playTrack(Track track,
-      {List<Track>? trackList, int? index}) async {
+  Future<void> playTrack(
+    Track track, {
+    List<Track>? trackList,
+    int? index,
+  }) async {
     _currentTrack = track;
     _trackController.add(track);
 
@@ -118,13 +122,22 @@ class AudioPlayerService {
       PlaybackInfo info;
       if (_enableDolbyAtmos && track.isDolbyAtmos) {
         try {
-          info = await api.getPlaybackInfo(track.id, quality: AudioQuality.dolbyAtmos);
+          info = await api.getPlaybackInfo(
+            track.id,
+            quality: AudioQuality.dolbyAtmos,
+          );
         } catch (e) {
           debugPrint('Dolby Atmos request failed, falling back to Hi-Res: $e');
-          info = await api.getPlaybackInfo(track.id, quality: AudioQuality.hiResLossless);
+          info = await api.getPlaybackInfo(
+            track.id,
+            quality: AudioQuality.hiResLossless,
+          );
         }
       } else {
-        info = await api.getPlaybackInfo(track.id, quality: AudioQuality.hiResLossless);
+        info = await api.getPlaybackInfo(
+          track.id,
+          quality: AudioQuality.hiResLossless,
+        );
       }
       _currentPlaybackInfo = info;
       _playbackInfoController.add(_currentPlaybackInfo);
@@ -151,7 +164,8 @@ class AudioPlayerService {
       await _player.open(Media(mediaUri));
 
       debugPrint(
-          'Playing: ${track.title} [${infoRef.audioQuality} ${infoRef.qualityLabel}]');
+        'Playing: ${track.title} [${infoRef.audioQuality} ${infoRef.qualityLabel}]',
+      );
     } catch (e) {
       debugPrint('Playback error: $e');
       _currentPlaybackInfo = null;
@@ -176,7 +190,7 @@ class AudioPlayerService {
   }
 
   Future<void> setVolume(double volume) async {
-    await _player.setVolume(volume * 100); // media_kit uses 0-100
+    await _player.setVolume(volume);
   }
 
   Future<void> playNext() async {
@@ -229,7 +243,9 @@ class AudioPlayerService {
       _originalQueue = List.from(_queue);
       final shuffled = List<Track>.from(_queue);
       if (current != null) {
-        shuffled.removeWhere((t) => identical(t, current) || t.id == current.id);
+        shuffled.removeWhere(
+          (t) => identical(t, current) || t.id == current.id,
+        );
       }
       shuffled.shuffle();
       if (current != null) {
