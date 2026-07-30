@@ -749,6 +749,40 @@ class AppState extends ChangeNotifier {
     }();
     return created;
   }
+
+  bool isUserPlaylist(String uuid) => _userPlaylists.any((p) => p.uuid == uuid);
+
+  Future<void> reorderPlaylistTrack(int oldIndex, int newIndex) async {
+    final playlist = _selectedPlaylist;
+    if (playlist == null || !isUserPlaylist(playlist.uuid)) return;
+    if (oldIndex < 0 || oldIndex >= _selectedPlaylistTracks.length) return;
+
+    var targetIndex = newIndex;
+    if (oldIndex < targetIndex) {
+      targetIndex -= 1;
+    }
+    if (targetIndex < 0 || targetIndex >= _selectedPlaylistTracks.length || oldIndex == targetIndex) return;
+
+    final trackToMove = _selectedPlaylistTracks[oldIndex];
+    final originalTracks = List<Track>.from(_selectedPlaylistTracks);
+    final track = _selectedPlaylistTracks.removeAt(oldIndex);
+    _selectedPlaylistTracks.insert(targetIndex, track);
+    notifyListeners();
+
+    try {
+      await api.reorderPlaylistTrack(
+        playlist.uuid,
+        trackToMove.id,
+        oldIndex,
+        targetIndex,
+      );
+    } catch (e) {
+      debugPrint('Failed to reorder playlist track: $e');
+      _selectedPlaylistTracks = originalTracks;
+      notifyListeners();
+      rethrow;
+    }
+  }
 }
 
 class _NavState {

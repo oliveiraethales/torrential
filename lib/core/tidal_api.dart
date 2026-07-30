@@ -420,6 +420,30 @@ class TidalApi {
     return trackIds.length;
   }
 
+  Future<void> reorderPlaylistTrack(
+    String uuid,
+    int trackId,
+    int fromIndex,
+    int toIndex,
+  ) async {
+    final etag1 = await _getPlaylistEtag(uuid);
+    await _deleteRaw(
+      '/playlists/$uuid/items/$fromIndex',
+      extraHeaders: {'If-None-Match': etag1},
+    );
+    final etag2 = await _getPlaylistEtag(uuid);
+    await _postRaw(
+      '/playlists/$uuid/items',
+      body: {
+        'trackIds': trackId.toString(),
+        'toIndex': toIndex.toString(),
+        'onArtifactNotFound': 'FAIL',
+        'onDupes': 'ADD',
+      },
+      extraHeaders: {'If-None-Match': etag2},
+    );
+  }
+
   // ─── HTTP helpers ─────────────────────────────────────────────────
 
   Future<http.Response> _postRaw(
@@ -450,14 +474,28 @@ class TidalApi {
     await _postRaw(path, body: body);
   }
 
-  Future<void> _delete(String path) async {
+  Future<http.Response> _deleteRaw(
+    String path, {
+    Map<String, String>? extraHeaders,
+  }) async {
     await auth.ensureValidToken();
     final uri = Uri.parse(
       '$_baseUrl$path',
     ).replace(queryParameters: {'countryCode': auth.countryCode});
-    final response = await _httpClient.delete(uri, headers: auth.apiHeaders);
+    final response = await _httpClient.delete(
+      uri,
+      headers: {
+        ...auth.apiHeaders,
+        ...?extraHeaders,
+      },
+    );
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception('DELETE failed: ${response.statusCode} ${response.body}');
     }
+    return response;
+  }
+
+  Future<void> _delete(String path) async {
+    await _deleteRaw(path);
   }
 }

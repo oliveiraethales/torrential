@@ -10,6 +10,7 @@ class TrackList extends StatelessWidget {
   final void Function(Track track, int index) onTap;
   final bool showTrackNumber;
   final bool showAlbum;
+  final void Function(int oldIndex, int newIndex)? onReorder;
 
   const TrackList({
     super.key,
@@ -17,14 +18,35 @@ class TrackList extends StatelessWidget {
     required this.onTap,
     this.showTrackNumber = false,
     this.showAlbum = false,
+    this.onReorder,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (onReorder != null) {
+      return ReorderableListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: false,
+        itemCount: tracks.length,
+        onReorder: onReorder!,
+        itemBuilder: (context, i) => _TrackRow(
+          key: ValueKey('${tracks[i].id}_$i'),
+          track: tracks[i],
+          index: i,
+          onTap: () => onTap(tracks[i], i),
+          showTrackNumber: showTrackNumber,
+          showAlbum: showAlbum,
+          isReorderable: true,
+        ),
+      );
+    }
+
     return Column(
       children: [
         for (int i = 0; i < tracks.length; i++)
           _TrackRow(
+            key: ValueKey('${tracks[i].id}_$i'),
             track: tracks[i],
             index: i,
             onTap: () => onTap(tracks[i], i),
@@ -42,13 +64,16 @@ class _TrackRow extends StatefulWidget {
   final VoidCallback onTap;
   final bool showTrackNumber;
   final bool showAlbum;
+  final bool isReorderable;
 
   const _TrackRow({
+    super.key,
     required this.track,
     required this.index,
     required this.onTap,
     required this.showTrackNumber,
     required this.showAlbum,
+    this.isReorderable = false,
   });
 
   @override
@@ -74,6 +99,21 @@ class _TrackRowState extends State<_TrackRow> {
           ),
           child: Row(
             children: [
+              if (widget.isReorderable)
+                ReorderableDragStartListener(
+                  index: widget.index,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.grab,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Icon(
+                        Icons.drag_indicator_rounded,
+                        size: 18,
+                        color: _hovering ? Colors.white70 : Colors.white24,
+                      ),
+                    ),
+                  ),
+                ),
               // Track number or play icon
               SizedBox(
                 width: 32,

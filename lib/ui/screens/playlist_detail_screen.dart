@@ -96,6 +96,22 @@ class PlaylistDetailScreen extends StatelessWidget {
               trackList: state.selectedPlaylistTracks,
               index: index,
             ),
+            onReorder: state.isUserPlaylist(playlist.uuid)
+                ? (oldIndex, newIndex) async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      await state.reorderPlaylistTrack(oldIndex, newIndex);
+                    } catch (e) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: Colors.red.shade900,
+                          content: Text('Failed to reorder playlist track: $e'),
+                        ),
+                      );
+                    }
+                  }
+                : null,
           ),
       ],
     );
