@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/tidal_auth.dart';
 import '../core/tidal_api.dart';
 import '../models/models.dart';
@@ -146,6 +147,30 @@ class AppState extends ChangeNotifier {
   Duration get totalDuration => _totalDuration;
   bool get shuffle => _shuffle;
   PlayerRepeatMode get repeat => _repeat;
+  bool get enableDolbyAtmos => audioPlayer.enableDolbyAtmos;
+
+  void toggleDolbyAtmos() {
+    audioPlayer.toggleDolbyAtmos();
+    _saveAudioSettings();
+    notifyListeners();
+  }
+
+  void setEnableDolbyAtmos(bool enable) {
+    audioPlayer.setEnableDolbyAtmos(enable);
+    _saveAudioSettings();
+    notifyListeners();
+  }
+
+  Future<void> _loadAudioSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enableAtmos = prefs.getBool('enable_dolby_atmos') ?? true;
+    audioPlayer.setEnableDolbyAtmos(enableAtmos);
+  }
+
+  Future<void> _saveAudioSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('enable_dolby_atmos', audioPlayer.enableDolbyAtmos);
+  }
 
   // ─── Navigation history (for back navigation) ───────────────────
   final List<_NavState> _navHistory = [];
@@ -157,6 +182,7 @@ class AppState extends ChangeNotifier {
     api = TidalApi(auth: auth);
     audioPlayer = AudioPlayerService(api: api);
     _listenToPlayer();
+    _loadAudioSettings();
     _mpris.initialize(audioPlayer);
   }
 
@@ -199,6 +225,9 @@ class AppState extends ChangeNotifier {
     audioPlayer.queueStream.listen((q) {
       _queue = q;
       _queueIndex = audioPlayer.queueIndex;
+      notifyListeners();
+    });
+    audioPlayer.dolbyAtmosStream.listen((_) {
       notifyListeners();
     });
   }

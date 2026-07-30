@@ -176,7 +176,30 @@ class _TrackRowState extends State<_TrackRow> {
               ),
 
               // Quality indicator
-              if (widget.track.audioQuality == 'HI_RES_LOSSLESS' ||
+              if (widget.track.isDolbyAtmos)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8A2BE2), Color(0xFF00B4D8)],
+                      ),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: const Text(
+                      'ATMOS',
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                )
+              else if (widget.track.audioQuality == 'HI_RES_LOSSLESS' ||
                   widget.track.audioQuality == 'HI_RES')
                 Padding(
                   padding: const EdgeInsets.only(right: 12),

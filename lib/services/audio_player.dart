@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart' hide Track;
 import 'package:path_provider/path_provider.dart';
 import '../core/tidal_api.dart';
+import '../core/tidal_auth.dart';
 import '../models/models.dart';
 
 enum PlayerRepeatMode { off, all, one }
@@ -22,6 +23,7 @@ class AudioPlayerService {
   int _queueIndex = -1;
   bool _shuffle = false;
   PlayerRepeatMode _repeat = PlayerRepeatMode.off;
+  bool _enableDolbyAtmos = true;
 
   // Stream controllers for UI updates
   final _trackController = StreamController<Track?>.broadcast();
@@ -29,12 +31,14 @@ class AudioPlayerService {
   final _queueController = StreamController<List<Track>>.broadcast();
   final _shuffleController = StreamController<bool>.broadcast();
   final _repeatController = StreamController<PlayerRepeatMode>.broadcast();
+  final _dolbyAtmosController = StreamController<bool>.broadcast();
 
   Stream<Track?> get trackStream => _trackController.stream;
   Stream<PlaybackInfo?> get playbackInfoStream => _playbackInfoController.stream;
   Stream<List<Track>> get queueStream => _queueController.stream;
   Stream<bool> get shuffleStream => _shuffleController.stream;
   Stream<PlayerRepeatMode> get repeatStream => _repeatController.stream;
+  Stream<bool> get dolbyAtmosStream => _dolbyAtmosController.stream;
 
   // Expose player streams directly
   Stream<bool> get playingStream => _player.stream.playing;
@@ -52,6 +56,18 @@ class AudioPlayerService {
   int get queueIndex => _queueIndex;
   bool get shuffle => _shuffle;
   PlayerRepeatMode get repeat => _repeat;
+  bool get enableDolbyAtmos => _enableDolbyAtmos;
+
+  void setEnableDolbyAtmos(bool enable) {
+    if (_enableDolbyAtmos == enable) return;
+    _enableDolbyAtmos = enable;
+    _dolbyAtmosController.add(_enableDolbyAtmos);
+    if (_currentTrack != null) {
+      playTrack(_currentTrack!);
+    }
+  }
+
+  void toggleDolbyAtmos() => setEnableDolbyAtmos(!_enableDolbyAtmos);
 
   AudioPlayerService({required this.api})
       : _player = Player() {
@@ -99,32 +115,43 @@ class AudioPlayerService {
 
     try {
       // Fetch playback info (stream URLs)
-      _currentPlaybackInfo = await api.getPlaybackInfo(track.id);
+      PlaybackInfo info;
+      if (_enableDolbyAtmos && track.isDolbyAtmos) {
+        try {
+          info = await api.getPlaybackInfo(track.id, quality: AudioQuality.dolbyAtmos);
+        } catch (e) {
+          debugPrint('Dolby Atmos request failed, falling back to Hi-Res: $e');
+          info = await api.getPlaybackInfo(track.id, quality: AudioQuality.hiResLossless);
+        }
+      } else {
+        info = await api.getPlaybackInfo(track.id, quality: AudioQuality.hiResLossless);
+      }
+      _currentPlaybackInfo = info;
       _playbackInfoController.add(_currentPlaybackInfo);
 
-      final info = _currentPlaybackInfo!;
+      final infoRef = _currentPlaybackInfo!;
       String mediaUri;
 
-      if (info.isDash) {
-        // DASH manifest (FLAC / Hi-Res FLAC)
+      if (infoRef.isDash) {
+        // DASH manifest (FLAC / Hi-Res FLAC / Dolby Atmos)
         // Save MPD to temp file and play from file://
         final tempDir = await getTemporaryDirectory();
         final mpdFile = File('${tempDir.path}/torrential_manifest.mpd');
-        await mpdFile.writeAsString(info.decodedManifest);
+        await mpdFile.writeAsString(infoRef.decodedManifest);
         mediaUri = mpdFile.uri.toString();
-      } else if (info.isBts) {
-        // BTS manifest (AAC) — direct URL
-        final urls = info.streamUrls;
+      } else if (infoRef.isBts) {
+        // BTS manifest (AAC / Dolby Atmos BTS) — direct URL
+        final urls = infoRef.streamUrls;
         if (urls.isEmpty) throw Exception('No stream URLs in BTS manifest');
         mediaUri = urls.first;
       } else {
-        throw Exception('Unknown manifest type: ${info.manifestMimeType}');
+        throw Exception('Unknown manifest type: ${infoRef.manifestMimeType}');
       }
 
       await _player.open(Media(mediaUri));
 
       debugPrint(
-          'Playing: ${track.title} [${info.audioQuality} ${info.qualityLabel}]');
+          'Playing: ${track.title} [${infoRef.audioQuality} ${infoRef.qualityLabel}]');
     } catch (e) {
       debugPrint('Playback error: $e');
       _currentPlaybackInfo = null;
@@ -251,5 +278,6 @@ class AudioPlayerService {
     _queueController.close();
     _shuffleController.close();
     _repeatController.close();
+    _dolbyAtmosController.close();
   }
 }

@@ -92,6 +92,7 @@ sudo pacman -S clang ninja cmake gtk3 pkg-config mpv
 
 - [x] **Composer filter** — filter albums by composer in Albums collection view (uses `/albums/{id}/credits` endpoint, `Composer`/`Writer`/`Lyricist` credit types)
 - [x] **Artist detail page** — hero header (blurred backdrop, portrait, Play button), bio (`/artists/{id}/bio`), Popular tracks, Albums, Singles & EPs (`filter=EPSANDSINGLES`), Appears On (`filter=COMPILATIONS`), Similar artists (`/artists/{id}/similar`). Artist names are clickable everywhere (track lists, album/playlist details, now-playing bar & screen) via the shared `ArtistLinks` widget.
+- [x] **Dolby Atmos support** — request & stream Dolby Atmos audio (`DOLBY_ATMOS` audio quality/mode via DASH/BTS manifests). Shows spatial audio ATMOS badges on tracks, albums, and now playing controls with interactive toggle and seamless fallback.
 - [ ] **Volume control** — slider in now playing bar (`audioPlayer.setVolume()`)
 - [x] **Shuffle & repeat** — shuffle toggle preserves the original queue order and snaps the current track to index 0; repeat cycles off → all → one (one restarts the same track on completion, all wraps next/previous at the queue boundaries). Controls live in both the now-playing bar and full-screen player.
 - [ ] **Keyboard shortcuts** — Space=play/pause, Left/Right=seek, Ctrl+F=search

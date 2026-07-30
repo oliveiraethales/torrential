@@ -60,7 +60,15 @@ class AlbumDetailScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         _InfoChip(label: '${album.numberOfTracks} tracks'),
                       ],
-                      if (album.audioQuality != null) ...[
+                      if (album.isDolbyAtmos) ...[
+                        const SizedBox(width: 8),
+                        const _InfoChip(
+                          label: 'Dolby Atmos',
+                          highlight: true,
+                          isAtmos: true,
+                        ),
+                      ],
+                      if (album.audioQuality != null && !album.isDolbyAtmos) ...[
                         const SizedBox(width: 8),
                         _InfoChip(
                           label: _qualityLabel(album.audioQuality!),
@@ -134,6 +142,8 @@ class AlbumDetailScreen extends StatelessWidget {
 
   String _qualityLabel(String quality) {
     switch (quality) {
+      case 'DOLBY_ATMOS':
+        return 'Dolby Atmos';
       case 'HI_RES_LOSSLESS':
       case 'HI_RES':
         return 'Hi-Res';
@@ -150,11 +160,41 @@ class AlbumDetailScreen extends StatelessWidget {
 class _InfoChip extends StatelessWidget {
   final String label;
   final bool highlight;
+  final bool isAtmos;
 
-  const _InfoChip({required this.label, this.highlight = false});
+  const _InfoChip({
+    required this.label,
+    this.highlight = false,
+    this.isAtmos = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (isAtmos) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF8A2BE2).withValues(alpha: 0.3),
+              const Color(0xFF00B4D8).withValues(alpha: 0.3),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: const Color(0xFF00B4D8).withValues(alpha: 0.6),
+          ),
+        ),
+        child: const Text(
+          'Dolby Atmos',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF00B4D8),
+          ),
+        ),
+      );
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(

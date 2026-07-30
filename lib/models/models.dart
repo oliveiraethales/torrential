@@ -86,6 +86,8 @@ class Album {
   final String? copyright;
   final List<Artist> artists;
   final String? audioQuality;
+  final List<String> audioModes;
+  final List<String> mediaMetadataTags;
 
   Album({
     required this.id,
@@ -97,11 +99,18 @@ class Album {
     this.copyright,
     this.artists = const [],
     this.audioQuality,
+    this.audioModes = const [],
+    this.mediaMetadataTags = const [],
   });
 
   String get imageUrl => tidalImageUrl(cover);
   String get artistNames => artists.map((a) => a.name).join(', ');
   String? get year => releaseDate?.split('-').firstOrNull;
+
+  bool get isDolbyAtmos =>
+      audioModes.contains('DOLBY_ATMOS') ||
+      mediaMetadataTags.contains('DOLBY_ATMOS') ||
+      audioQuality == 'DOLBY_ATMOS';
 
   factory Album.fromJson(Map<String, dynamic> json) {
     List<Artist> artists = [];
@@ -111,6 +120,16 @@ class Album {
           .toList();
     } else if (json['artist'] != null) {
       artists = [Artist.fromJson(json['artist'] as Map<String, dynamic>)];
+    }
+
+    final audioModesRaw = json['audioModes'] as List<dynamic>?;
+    final audioModes = audioModesRaw?.map((e) => e.toString()).toList() ?? [];
+
+    List<String> mediaMetadataTags = [];
+    if (json['mediaMetadata'] is Map && json['mediaMetadata']['tags'] is List) {
+      mediaMetadataTags = (json['mediaMetadata']['tags'] as List<dynamic>)
+          .map((e) => e.toString())
+          .toList();
     }
 
     return Album(
@@ -123,6 +142,8 @@ class Album {
       copyright: json['copyright'] as String?,
       artists: artists,
       audioQuality: json['audioQuality'] as String?,
+      audioModes: audioModes,
+      mediaMetadataTags: mediaMetadataTags,
     );
   }
 }
@@ -138,6 +159,8 @@ class Track {
   final List<Artist> artists;
   final Album? album;
   final String? audioQuality;
+  final List<String> audioModes;
+  final List<String> mediaMetadataTags;
   final bool explicit;
 
   Track({
@@ -149,11 +172,18 @@ class Track {
     this.artists = const [],
     this.album,
     this.audioQuality,
+    this.audioModes = const [],
+    this.mediaMetadataTags = const [],
     this.explicit = false,
   });
 
   String get artistNames => artists.map((a) => a.name).join(', ');
   String get imageUrl => album?.imageUrl ?? '';
+
+  bool get isDolbyAtmos =>
+      audioModes.contains('DOLBY_ATMOS') ||
+      mediaMetadataTags.contains('DOLBY_ATMOS') ||
+      audioQuality == 'DOLBY_ATMOS';
 
   String get durationFormatted {
     final minutes = duration ~/ 60;
@@ -183,6 +213,16 @@ class Track {
       album = Album.fromJson(json['album'] as Map<String, dynamic>);
     }
 
+    final audioModesRaw = json['audioModes'] as List<dynamic>?;
+    final audioModes = audioModesRaw?.map((e) => e.toString()).toList() ?? [];
+
+    List<String> mediaMetadataTags = [];
+    if (json['mediaMetadata'] is Map && json['mediaMetadata']['tags'] is List) {
+      mediaMetadataTags = (json['mediaMetadata']['tags'] as List<dynamic>)
+          .map((e) => e.toString())
+          .toList();
+    }
+
     return Track(
       id: json['id'] as int,
       title: json['title'] as String? ?? 'Unknown Track',
@@ -192,6 +232,8 @@ class Track {
       artists: artists,
       album: album,
       audioQuality: json['audioQuality'] as String?,
+      audioModes: audioModes,
+      mediaMetadataTags: mediaMetadataTags,
       explicit: json['explicit'] as bool? ?? false,
     );
   }
@@ -307,6 +349,10 @@ class PlaybackInfo {
     this.trackPeakAmplitude,
   });
 
+  /// Whether this track stream is Dolby Atmos format.
+  bool get isDolbyAtmos =>
+      audioMode == 'DOLBY_ATMOS' || audioQuality == 'DOLBY_ATMOS';
+
   /// Whether this is a DASH manifest (used for FLAC).
   bool get isDash => manifestMimeType == 'application/dash+xml';
 
@@ -323,6 +369,9 @@ class PlaybackInfo {
   }
 
   String get qualityLabel {
+    if (isDolbyAtmos) {
+      return 'Dolby Atmos';
+    }
     if (bitDepth != null && sampleRate != null) {
       return '$bitDepth-bit / ${(sampleRate! / 1000).toStringAsFixed(1)}kHz';
     }

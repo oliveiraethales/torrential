@@ -10,7 +10,8 @@ enum AudioQuality {
   low('LOW', 'Low (AAC 96kbps)'),
   high('HIGH', 'High (AAC 320kbps)'),
   lossless('LOSSLESS', 'Lossless (FLAC 16-bit/44.1kHz)'),
-  hiResLossless('HI_RES_LOSSLESS', 'Max (Hi-Res FLAC 24-bit/192kHz)');
+  hiResLossless('HI_RES_LOSSLESS', 'Max (Hi-Res FLAC 24-bit/192kHz)'),
+  dolbyAtmos('DOLBY_ATMOS', 'Dolby Atmos');
 
   final String apiValue;
   final String label;

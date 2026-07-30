@@ -219,22 +219,50 @@ class NowPlayingBar extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         if (state.currentPlaybackInfo != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withValues(alpha: 0.15),
+                          Tooltip(
+                            message: state.enableDolbyAtmos
+                                ? 'Dolby Atmos enabled (click to toggle)'
+                                : 'Dolby Atmos disabled (click to toggle)',
+                            child: InkWell(
                               borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              state.currentPlaybackInfo!.qualityLabel,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w600,
+                              onTap: () => state.toggleDolbyAtmos(),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  gradient: state.currentPlaybackInfo!.isDolbyAtmos
+                                      ? const LinearGradient(
+                                          colors: [Color(0xFF8A2BE2), Color(0xFF00B4D8)],
+                                        )
+                                      : null,
+                                  color: state.currentPlaybackInfo!.isDolbyAtmos
+                                      ? null
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (state.currentPlaybackInfo!.isDolbyAtmos) ...[
+                                      const Icon(Icons.spatial_audio_rounded,
+                                          size: 12, color: Colors.white),
+                                      const SizedBox(width: 4),
+                                    ],
+                                    Text(
+                                      state.currentPlaybackInfo!.qualityLabel,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: state.currentPlaybackInfo!.isDolbyAtmos
+                                            ? Colors.white
+                                            : Theme.of(context).colorScheme.primary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
