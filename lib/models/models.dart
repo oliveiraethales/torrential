@@ -264,6 +264,28 @@ class Playlist {
 
   String get imageUrl => tidalImageUrl(squareImage ?? image, width: 640, height: 640);
 
+  Playlist copyWith({
+    String? uuid,
+    String? title,
+    String? description,
+    String? image,
+    String? squareImage,
+    int? numberOfTracks,
+    int? duration,
+    String? creator,
+  }) {
+    return Playlist(
+      uuid: uuid ?? this.uuid,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      image: image ?? this.image,
+      squareImage: squareImage ?? this.squareImage,
+      numberOfTracks: numberOfTracks ?? this.numberOfTracks,
+      duration: duration ?? this.duration,
+      creator: creator ?? this.creator,
+    );
+  }
+
   factory Playlist.fromJson(Map<String, dynamic> json) {
     String? creatorName;
     if (json['creator'] is Map) {

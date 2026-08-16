@@ -112,6 +112,29 @@ class PlaylistDetailScreen extends StatelessWidget {
                     }
                   }
                 : null,
+            onRemoveTrack: state.isUserPlaylist(playlist.uuid)
+                ? (track, index) async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    try {
+                      await state.removeTrackFromPlaylist(index);
+                      messenger.showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 2),
+                          content: Text('Removed "${track.title}" from playlist'),
+                        ),
+                      );
+                    } catch (e) {
+                      messenger.showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: Colors.red.shade900,
+                          content: Text('Failed to remove track: $e'),
+                        ),
+                      );
+                    }
+                  }
+                : null,
           ),
       ],
     );

@@ -444,6 +444,14 @@ class TidalApi {
     );
   }
 
+  Future<void> removeTrackFromPlaylist(String uuid, int index) async {
+    final etag = await _getPlaylistEtag(uuid);
+    await _deleteRaw(
+      '/playlists/$uuid/items/$index',
+      extraHeaders: {'If-None-Match': etag},
+    );
+  }
+
   // ─── HTTP helpers ─────────────────────────────────────────────────
 
   Future<http.Response> _postRaw(

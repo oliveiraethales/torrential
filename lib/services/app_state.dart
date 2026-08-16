@@ -783,6 +783,38 @@ class AppState extends ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<void> removeTrackFromPlaylist(int index) async {
+    final playlist = _selectedPlaylist;
+    if (playlist == null || !isUserPlaylist(playlist.uuid)) return;
+    if (index < 0 || index >= _selectedPlaylistTracks.length) return;
+
+    final originalTracks = List<Track>.from(_selectedPlaylistTracks);
+    final originalPlaylist = _selectedPlaylist;
+
+    _selectedPlaylistTracks.removeAt(index);
+    _selectedPlaylist = playlist.copyWith(
+      numberOfTracks: (playlist.numberOfTracks - 1).clamp(0, 999999),
+    );
+    notifyListeners();
+
+    try {
+      await api.removeTrackFromPlaylist(playlist.uuid, index);
+      () async {
+        try {
+          final fresh = await api.getUserPlaylists();
+          _userPlaylists = fresh;
+          notifyListeners();
+        } catch (_) {}
+      }();
+    } catch (e) {
+      debugPrint('Failed to remove track from playlist: $e');
+      _selectedPlaylistTracks = originalTracks;
+      _selectedPlaylist = originalPlaylist;
+      notifyListeners();
+      rethrow;
+    }
+  }
 }
 
 class _NavState {

@@ -11,6 +11,7 @@ class TrackList extends StatelessWidget {
   final bool showTrackNumber;
   final bool showAlbum;
   final void Function(int oldIndex, int newIndex)? onReorder;
+  final void Function(Track track, int index)? onRemoveTrack;
 
   const TrackList({
     super.key,
@@ -19,6 +20,7 @@ class TrackList extends StatelessWidget {
     this.showTrackNumber = false,
     this.showAlbum = false,
     this.onReorder,
+    this.onRemoveTrack,
   });
 
   @override
@@ -38,6 +40,7 @@ class TrackList extends StatelessWidget {
           showTrackNumber: showTrackNumber,
           showAlbum: showAlbum,
           isReorderable: true,
+          onRemove: onRemoveTrack != null ? () => onRemoveTrack!(tracks[i], i) : null,
         ),
       );
     }
@@ -52,6 +55,7 @@ class TrackList extends StatelessWidget {
             onTap: () => onTap(tracks[i], i),
             showTrackNumber: showTrackNumber,
             showAlbum: showAlbum,
+            onRemove: onRemoveTrack != null ? () => onRemoveTrack!(tracks[i], i) : null,
           ),
       ],
     );
@@ -65,6 +69,7 @@ class _TrackRow extends StatefulWidget {
   final bool showTrackNumber;
   final bool showAlbum;
   final bool isReorderable;
+  final VoidCallback? onRemove;
 
   const _TrackRow({
     super.key,
@@ -74,6 +79,7 @@ class _TrackRow extends StatefulWidget {
     required this.showTrackNumber,
     required this.showAlbum,
     this.isReorderable = false,
+    this.onRemove,
   });
 
   @override
@@ -290,6 +296,25 @@ class _TrackRowState extends State<_TrackRow> {
               // Favorite heart
               _FavoriteHeart(track: widget.track, hovering: _hovering),
               const SizedBox(width: 8),
+
+              if (widget.onRemove != null) ...[
+                SizedBox(
+                  width: 32,
+                  child: _hovering
+                      ? IconButton(
+                          tooltip: 'Remove from playlist',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                              minWidth: 28, minHeight: 28),
+                          iconSize: 18,
+                          color: Colors.white70,
+                          icon: const Icon(Icons.remove_circle_outline_rounded),
+                          onPressed: widget.onRemove,
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 8),
+              ],
 
               // Duration
               Text(
